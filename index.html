@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Ledger &amp; Lantern — Game Master's Companion</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='18' fill='%23191510'/%3E%3Ccircle cx='50' cy='46' r='24' fill='%23c1954a'/%3E%3Cpath d='M50 14 Q62 30 50 46 Q38 30 50 14Z' fill='%23a83f34'/%3E%3C/svg%3E">
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<div class="grain-overlay" aria-hidden="true"></div>
+
+<header class="top-bar">
+  <div class="brand" data-action="edit-campaign-name" title="Click to rename your campaign" role="button" tabindex="0">
+    <svg class="lantern-icon" viewBox="0 0 100 100" aria-hidden="true">
+      <ellipse cx="50" cy="88" rx="14" ry="4" fill="var(--shadow)"/>
+      <rect x="46" y="6" width="8" height="10" rx="2" fill="var(--brass)"/>
+      <path d="M30 16 H70 L64 28 H36 Z" fill="var(--brass)"/>
+      <rect x="34" y="28" width="32" height="42" rx="6" fill="var(--glass)" stroke="var(--brass)" stroke-width="2"/>
+      <circle class="flame-glow" cx="50" cy="49" r="13" fill="var(--flame)"/>
+      <path class="flame-core" d="M50 40 Q57 49 50 60 Q43 49 50 40Z" fill="var(--flame-core)"/>
+      <path d="M30 70 H70 L66 80 H34 Z" fill="var(--brass)"/>
+      <rect x="40" y="80" width="20" height="6" rx="2" fill="var(--brass)"/>
+    </svg>
+    <div class="brand-text">
+      <h1 id="campaignName">Ledger &amp; Lantern</h1>
+      <p class="subtitle">Game Master's Companion</p>
+    </div>
+  </div>
+
+  <div class="header-actions">
+    <div class="day-badge" title="Current campaign day">
+      <span class="day-badge-label">Day</span>
+      <span class="day-badge-number" id="dayNumber">1</span>
+    </div>
+    <button class="btn btn-brass" data-action="advance-day-quick">Advance Day →</button>
+  </div>
+</header>
+
+<nav class="tabs" role="tablist" aria-label="Sections">
+  <button class="tab-btn active" data-tab="party" role="tab" aria-selected="true">Party</button>
+  <button class="tab-btn" data-tab="initiative" role="tab" aria-selected="false">Initiative</button>
+  <button class="tab-btn" data-tab="calendar" role="tab" aria-selected="false">Calendar</button>
+</nav>
+
+<main>
+
+  <!-- ===================== PARTY TAB ===================== -->
+  <section id="tab-party" class="tab-panel active" role="tabpanel">
+    <div class="toolbar">
+      <button class="btn btn-brass" data-action="open-add-pc">+ Add Character</button>
+      <div class="toolbar-spacer"></div>
+      <button class="btn btn-ghost" data-action="rest-all" title="Clear Tired from every character">🛌 Rest Whole Party</button>
+      <button class="btn btn-ghost" data-action="feed-all" title="Clear Hungry from every character">🍖 Feed Whole Party</button>
+    </div>
+    <div id="pcList" class="pc-grid"></div>
+  </section>
+
+  <!-- ===================== INITIATIVE TAB ===================== -->
+  <section id="tab-initiative" class="tab-panel" role="tabpanel">
+    <div class="toolbar">
+      <button class="btn btn-brass" data-action="load-party">Load Party</button>
+      <button class="btn btn-brass" data-action="open-add-combatant">+ Add Monster / NPC</button>
+      <div class="toolbar-spacer"></div>
+      <button class="btn btn-ghost" data-action="roll-all-unrolled">🎲 Roll All Unrolled</button>
+      <button class="btn btn-ghost" data-action="sort-now">Sort by Initiative</button>
+      <button class="btn btn-danger-ghost" data-action="end-combat">End Combat</button>
+    </div>
+
+    <div class="turn-tracker" aria-live="polite">
+      <div class="turn-round">Round <span id="roundNumber">1</span></div>
+      <div class="turn-current" id="turnCurrentLabel">No combatants yet</div>
+      <div class="turn-buttons">
+        <button class="btn btn-ghost" data-action="prev-turn">◂ Prev Turn</button>
+        <button class="btn btn-brass" data-action="next-turn">Next Turn ▸</button>
+      </div>
+    </div>
+
+    <div id="combatantList" class="combatant-list"></div>
+  </section>
+
+  <!-- ===================== CALENDAR TAB ===================== -->
+  <section id="tab-calendar" class="tab-panel" role="tabpanel">
+    <div class="calendar-hero">
+      <div class="calendar-day-huge"><span id="dayNumberHuge">1</span></div>
+      <p class="calendar-caption">has dawned upon the realm</p>
+    </div>
+
+    <div class="calendar-advance-form">
+      <label for="dayNoteInput">What happened today? <span class="optional-tag">(optional)</span></label>
+      <textarea id="dayNoteInput" rows="2" placeholder="The party made camp outside the ruined watchtower…"></textarea>
+      <button class="btn btn-brass" data-action="advance-day-with-note">Advance to Next Day →</button>
+      <p class="calendar-hint">Advancing the day marks every character Tired and Hungry. Clear those effects from the Party tab when the party rests or eats.</p>
+    </div>
+
+    <h2 class="log-heading">Chronicle</h2>
+    <div id="dayLog" class="day-log"></div>
+  </section>
+
+</main>
+
+<footer class="data-footer">
+  <span class="data-footer-label">Campaign Data</span>
+  <button class="btn btn-ghost btn-small" data-action="export-json">⬇ Export</button>
+  <button class="btn btn-ghost btn-small" data-action="trigger-import">⬆ Import</button>
+  <input type="file" id="importFile" accept="application/json" hidden>
+  <button class="btn btn-danger-ghost btn-small" data-action="reset-campaign">Reset Campaign</button>
+  <span class="save-indicator" id="saveIndicator"></span>
+</footer>
+
+<!-- ===================== PC MODAL ===================== -->
+<div class="modal-overlay" id="pcModalOverlay" hidden>
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="pcModalTitle">
+    <h2 id="pcModalTitle">Add Character</h2>
+    <form id="pcForm">
+      <input type="hidden" id="pcId">
+
+      <div class="field">
+        <label for="pcName">Name</label>
+        <input type="text" id="pcName" required maxlength="40" placeholder="Vex Thornwood">
+      </div>
+
+      <div class="field-grid abilities-grid">
+        <div class="field ability-field">
+          <label for="pcStr">STR</label>
+          <input type="number" id="pcStr" value="10" min="1" max="30">
+        </div>
+        <div class="field ability-field">
+          <label for="pcDex">DEX</label>
+          <input type="number" id="pcDex" value="10" min="1" max="30">
+        </div>
+        <div class="field ability-field">
+          <label for="pcCon">CON</label>
+          <input type="number" id="pcCon" value="10" min="1" max="30">
+        </div>
+        <div class="field ability-field">
+          <label for="pcWis">WIS</label>
+          <input type="number" id="pcWis" value="10" min="1" max="30">
+        </div>
+        <div class="field ability-field">
+          <label for="pcInt">INT</label>
+          <input type="number" id="pcInt" value="10" min="1" max="30">
+        </div>
+        <div class="field ability-field">
+          <label for="pcCha">CHA</label>
+          <input type="number" id="pcCha" value="10" min="1" max="30">
+        </div>
+      </div>
+
+      <div class="field-grid">
+        <div class="field">
+          <label for="pcAc">Armor Class</label>
+          <input type="number" id="pcAc" value="10" min="0" max="40">
+        </div>
+        <div class="field">
+          <label for="pcInitMod">Initiative Modifier</label>
+          <input type="number" id="pcInitMod" value="0" min="-10" max="20">
+        </div>
+      </div>
+
+      <div class="field-grid">
+        <div class="field">
+          <label for="pcMaxHp">Max HP</label>
+          <input type="number" id="pcMaxHp" value="10" min="1" max="999">
+        </div>
+        <div class="field">
+          <label for="pcCurrentHp">Current HP</label>
+          <input type="number" id="pcCurrentHp" value="10" min="0" max="999">
+        </div>
+      </div>
+
+      <div class="field">
+        <label for="pcNotes">Notes <span class="optional-tag">(optional)</span></label>
+        <textarea id="pcNotes" rows="2" placeholder="Class, background, quirks…"></textarea>
+      </div>
+
+      <div class="modal-actions">
+        <button type="button" class="btn btn-ghost" data-action="close-pc-modal">Cancel</button>
+        <button type="submit" class="btn btn-brass">Save Character</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- ===================== COMBATANT MODAL ===================== -->
+<div class="modal-overlay" id="combatantModalOverlay" hidden>
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="combatantModalTitle">
+    <h2 id="combatantModalTitle">Add Monster / NPC</h2>
+    <form id="combatantForm">
+      <div class="field">
+        <label for="combName">Name</label>
+        <input type="text" id="combName" required maxlength="40" placeholder="Goblin Skirmisher">
+      </div>
+      <div class="field-grid">
+        <div class="field">
+          <label for="combInitMod">Initiative Modifier</label>
+          <input type="number" id="combInitMod" value="0" min="-10" max="20">
+        </div>
+        <div class="field">
+          <label for="combAc">Armor Class <span class="optional-tag">(optional)</span></label>
+          <input type="number" id="combAc" min="0" max="40" placeholder="—">
+        </div>
+      </div>
+      <div class="field">
+        <label for="combMaxHp">Max HP <span class="optional-tag">(optional)</span></label>
+        <input type="number" id="combMaxHp" min="1" max="999" placeholder="—">
+      </div>
+      <div class="modal-actions">
+        <button type="button" class="btn btn-ghost" data-action="close-combatant-modal">Cancel</button>
+        <button type="submit" class="btn btn-brass">Add to Battle</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script src="js/app.js"></script>
+</body>
+</html>
