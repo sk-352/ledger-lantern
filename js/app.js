@@ -14,6 +14,13 @@
     ['STR', 'str'], ['DEX', 'dex'], ['CON', 'con'],
     ['WIS', 'wis'], ['INT', 'int'], ['CHA', 'cha']
   ];
+  var GREGORIAN_MONTHS = [
+    { name: 'January', days: 31 }, { name: 'February', days: 28 }, { name: 'March', days: 31 },
+    { name: 'April', days: 30 }, { name: 'May', days: 31 }, { name: 'June', days: 30 },
+    { name: 'July', days: 31 }, { name: 'August', days: 31 }, { name: 'September', days: 30 },
+    { name: 'October', days: 31 }, { name: 'November', days: 30 }, { name: 'December', days: 31 }
+  ];
+  var GREGORIAN_WEEKDAYS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 
   /* ---------------------------------------------------------- */
   /* State                                                       */
@@ -21,14 +28,67 @@
 
   var state = null;
 
+  function defaultCalendarStructure() {
+    return {
+      months: GREGORIAN_MONTHS.map(function (m) { return { name: m.name, days: m.days }; }),
+      weekdays: GREGORIAN_WEEKDAYS.slice()
+    };
+  }
+
   function defaultState() {
+    var cal = defaultCalendarStructure();
+    cal.current = { year: 1, monthIndex: 0, day: 1, weekdayIndex: 0 };
     return {
       campaignName: 'Ledger & Lantern',
       day: 1,
       log: [],
       pcs: [],
-      combat: { round: 1, currentIndex: 0, combatants: [] }
+      combat: { round: 1, currentIndex: 0, combatants: [] },
+      calendar: cal
     };
+  }
+
+  function normalizeCalendar(cal) {
+    var d = defaultCalendarStructure();
+
+    var months = (cal && Array.isArray(cal.months)) ? cal.months
+      .filter(function (m) { return m && Number.isFinite(m.days) && m.days >= 1; })
+      .map(function (m) { return { name: (typeof m.name === 'string' && m.name.trim()) ? m.name.trim() : 'Month', days: Math.max(1, Math.round(m.days)) }; })
+      : [];
+    if (months.length === 0) months = d.months;
+
+    var weekdays = (cal && Array.isArray(cal.weekdays)) ? cal.weekdays
+      .map(function (w) { return (typeof w === 'string' && w.trim()) ? w.trim() : 'Day'; })
+      : [];
+    if (weekdays.length === 0) weekdays = d.weekdays;
+
+    var raw = (cal && cal.current && typeof cal.current === 'object') ? cal.current : {};
+    var monthIndex = Number.isFinite(raw.monthIndex) ? clamp(Math.round(raw.monthIndex), 0, months.length - 1) : 0;
+    var day = Number.isFinite(raw.day) ? clamp(Math.round(raw.day), 1, months[monthIndex].days) : 1;
+    var weekdayIndex = Number.isFinite(raw.weekdayIndex) ? clamp(Math.round(raw.weekdayIndex), 0, weekdays.length - 1) : 0;
+    var year = Number.isFinite(raw.year) ? Math.round(raw.year) : 1;
+
+    return { months: months, weekdays: weekdays, current: { year: year, monthIndex: monthIndex, day: day, weekdayIndex: weekdayIndex } };
+  }
+
+  function advanceCalendarOneDay(cal) {
+    cal.current.weekdayIndex = (cal.current.weekdayIndex + 1) % cal.weekdays.length;
+    cal.current.day += 1;
+    var monthLen = cal.months[cal.current.monthIndex].days;
+    if (cal.current.day > monthLen) {
+      cal.current.day = 1;
+      cal.current.monthIndex += 1;
+      if (cal.current.monthIndex >= cal.months.length) {
+        cal.current.monthIndex = 0;
+        cal.current.year += 1;
+      }
+    }
+  }
+
+  function formatCalendarDateLabel(cal) {
+    var m = cal.months[cal.current.monthIndex];
+    var w = cal.weekdays[cal.current.weekdayIndex];
+    return w + ', ' + cal.current.day + ' ' + m.name + ', Year ' + cal.current.year;
   }
 
   function normalizePC(p) {
@@ -81,7 +141,8 @@
         round: Number.isFinite(parsed.combat.round) ? parsed.combat.round : 1,
         currentIndex: Number.isFinite(parsed.combat.currentIndex) ? parsed.combat.currentIndex : 0,
         combatants: Array.isArray(parsed.combat.combatants) ? parsed.combat.combatants.map(normalizeCombatant) : []
-      } : d.combat
+      } : d.combat,
+      calendar: normalizeCalendar(parsed.calendar)
     };
   }
 
@@ -141,7 +202,6 @@
   function renderHeader() {
     $('#campaignName').textContent = state.campaignName;
     $('#dayNumber').textContent = state.day;
-    $('#dayNumberHuge').textContent = state.day;
   }
 
   /* ---------------------------------------------------------- */
@@ -275,6 +335,30 @@
   /* ---------------------------------------------------------- */
 
   function renderCalendarTab() {
+    var cal = state.calendar;
+    var m = cal.months[cal.current.monthIndex];
+    var w = cal.weekdays[cal.current.weekdayIndex];
+
+    $('#calendarDateHuge').textContent = cal.current.day + ' ' + m.name;
+    $('#calendarSubline').textContent = w + ' · Year ' + cal.current.year;
+    $('#calendarDayCounter').textContent = 'Campaign Day ' + state.day;
+
+    var monthSelect = $('#jumpMonth');
+    monthSelect.innerHTML = cal.months.map(function (mo, i) {
+      return '<option value="' + i + '">' + escapeHTML(mo.name) + '</option>';
+    }).join('');
+    monthSelect.value = String(cal.current.monthIndex);
+
+    var weekdaySelect = $('#jumpWeekday');
+    weekdaySelect.innerHTML = cal.weekdays.map(function (wd, i) {
+      return '<option value="' + i + '">' + escapeHTML(wd) + '</option>';
+    }).join('');
+    weekdaySelect.value = String(cal.current.weekdayIndex);
+
+    $('#jumpYear').value = cal.current.year;
+    $('#jumpDay').value = cal.current.day;
+    $('#jumpDay').max = m.days;
+
     var log = $('#dayLog');
     if (state.log.length === 0) {
       log.innerHTML = '<div class="empty-state">No entries yet. Advance the day to begin the chronicle.</div>';
@@ -284,7 +368,10 @@
       return (
         '<div class="day-log-entry">' +
           '<div class="day-log-day">Day ' + entry.day + '</div>' +
-          '<div class="day-log-note">' + (entry.note ? escapeHTML(entry.note) : '<span class="hpmini-none">No notes recorded.</span>') + '</div>' +
+          '<div class="day-log-body">' +
+            (entry.dateLabel ? '<div class="day-log-date">' + escapeHTML(entry.dateLabel) + '</div>' : '') +
+            '<div class="day-log-note">' + (entry.note ? escapeHTML(entry.note) : '<span class="hpmini-none">No notes recorded.</span>') + '</div>' +
+          '</div>' +
         '</div>'
       );
     }).join('');
@@ -624,9 +711,11 @@
 
   function advanceDay(note) {
     var closingDay = state.day;
-    state.log.unshift({ day: closingDay, note: (note || '').trim() });
+    var dateLabel = formatCalendarDateLabel(state.calendar);
+    state.log.unshift({ day: closingDay, note: (note || '').trim(), dateLabel: dateLabel });
     state.pcs.forEach(function (p) { p.tired = true; p.hungry = true; });
     state.day = closingDay + 1;
+    advanceCalendarOneDay(state.calendar);
     saveState();
     renderHeader();
     renderPartyTab();
@@ -642,6 +731,132 @@
     var note = $('#dayNoteInput').value;
     advanceDay(note);
     $('#dayNoteInput').value = '';
+  }
+
+  function setCurrentDate() {
+    var cal = state.calendar;
+    var year = parseInt($('#jumpYear').value, 10);
+    if (isNaN(year)) year = cal.current.year;
+
+    var monthIndex = parseInt($('#jumpMonth').value, 10);
+    if (isNaN(monthIndex) || monthIndex < 0 || monthIndex >= cal.months.length) monthIndex = cal.current.monthIndex;
+
+    var maxDay = cal.months[monthIndex].days;
+    var day = clamp(parseInt($('#jumpDay').value, 10) || 1, 1, maxDay);
+
+    var weekdayIndex = parseInt($('#jumpWeekday').value, 10);
+    if (isNaN(weekdayIndex) || weekdayIndex < 0 || weekdayIndex >= cal.weekdays.length) weekdayIndex = cal.current.weekdayIndex;
+
+    cal.current = { year: year, monthIndex: monthIndex, day: day, weekdayIndex: weekdayIndex };
+    saveState();
+    renderCalendarTab();
+  }
+
+  /* ---------------------------------------------------------- */
+  /* Calendar structure editor (months / weekdays)                */
+  /* ---------------------------------------------------------- */
+
+  var draftMonths = [];
+  var draftWeekdays = [];
+
+  function openCalendarStructureModal() {
+    draftMonths = state.calendar.months.map(function (m) { return { name: m.name, days: m.days }; });
+    draftWeekdays = state.calendar.weekdays.slice();
+    renderMonthsEditor();
+    renderWeekdaysEditor();
+    showModal('#calendarStructureModalOverlay');
+  }
+
+  function renderMonthsEditor() {
+    $('#monthsEditorList').innerHTML = draftMonths.map(function (m, i) {
+      return (
+        '<div class="editor-row">' +
+          '<input type="text" class="month-name-input" value="' + escapeHTML(m.name) + '">' +
+          '<input type="number" class="month-days-input" value="' + m.days + '" min="1" max="99">' +
+          '<button type="button" class="btn-icon" data-action="remove-month-row" data-index="' + i + '" title="Remove month">✕</button>' +
+        '</div>'
+      );
+    }).join('');
+  }
+
+  function renderWeekdaysEditor() {
+    $('#weekdaysEditorList').innerHTML = draftWeekdays.map(function (w, i) {
+      return (
+        '<div class="editor-row">' +
+          '<input type="text" class="weekday-name-input" value="' + escapeHTML(w) + '">' +
+          '<button type="button" class="btn-icon" data-action="remove-weekday-row" data-index="' + i + '" title="Remove day">✕</button>' +
+        '</div>'
+      );
+    }).join('');
+  }
+
+  function syncMonthsDraftFromDOM() {
+    draftMonths = $all('#monthsEditorList .editor-row').map(function (row) {
+      var name = row.querySelector('.month-name-input').value.trim() || 'Month';
+      var days = Math.max(1, parseInt(row.querySelector('.month-days-input').value, 10) || 1);
+      return { name: name, days: days };
+    });
+  }
+
+  function syncWeekdaysDraftFromDOM() {
+    draftWeekdays = $all('#weekdaysEditorList .editor-row').map(function (row) {
+      return row.querySelector('.weekday-name-input').value.trim() || 'Day';
+    });
+  }
+
+  function addMonthRow() {
+    syncMonthsDraftFromDOM();
+    draftMonths.push({ name: 'New Month', days: 30 });
+    renderMonthsEditor();
+  }
+
+  function removeMonthRow(index) {
+    syncMonthsDraftFromDOM();
+    if (draftMonths.length <= 1) { alert('A calendar needs at least one month.'); return; }
+    draftMonths.splice(index, 1);
+    renderMonthsEditor();
+  }
+
+  function addWeekdayRow() {
+    syncWeekdaysDraftFromDOM();
+    draftWeekdays.push('New Day');
+    renderWeekdaysEditor();
+  }
+
+  function removeWeekdayRow(index) {
+    syncWeekdaysDraftFromDOM();
+    if (draftWeekdays.length <= 1) { alert('A calendar needs at least one weekday.'); return; }
+    draftWeekdays.splice(index, 1);
+    renderWeekdaysEditor();
+  }
+
+  function loadGregorianPresetIntoDraft() {
+    var preset = defaultCalendarStructure();
+    draftMonths = preset.months;
+    draftWeekdays = preset.weekdays;
+    renderMonthsEditor();
+    renderWeekdaysEditor();
+  }
+
+  function saveCalendarStructure() {
+    syncMonthsDraftFromDOM();
+    syncWeekdaysDraftFromDOM();
+    if (draftMonths.length === 0 || draftWeekdays.length === 0) {
+      alert('A calendar needs at least one month and one weekday.');
+      return;
+    }
+
+    state.calendar.months = draftMonths;
+    state.calendar.weekdays = draftWeekdays;
+
+    var cur = state.calendar.current;
+    cur.monthIndex = clamp(cur.monthIndex, 0, state.calendar.months.length - 1);
+    cur.day = clamp(cur.day, 1, state.calendar.months[cur.monthIndex].days);
+    cur.weekdayIndex = clamp(cur.weekdayIndex, 0, state.calendar.weekdays.length - 1);
+
+    saveState();
+    renderCalendarTab();
+    closeModal('#calendarStructureModalOverlay');
   }
 
   /* ---------------------------------------------------------- */
@@ -763,10 +978,23 @@
     var combRow = actionEl.closest ? actionEl.closest('.combatant-row') : null;
     var combId = combRow ? combRow.getAttribute('data-id') : null;
 
+    var indexAttr = actionEl.getAttribute('data-index');
+    var rowIndex = indexAttr !== null ? parseInt(indexAttr, 10) : null;
+
     switch (action) {
       case 'edit-campaign-name': editCampaignName(); break;
       case 'advance-day-quick': advanceDayQuick(); break;
       case 'advance-day-with-note': advanceDayWithNote(); break;
+      case 'set-current-date': setCurrentDate(); break;
+
+      case 'open-calendar-structure': openCalendarStructureModal(); break;
+      case 'close-calendar-structure': closeModal('#calendarStructureModalOverlay'); break;
+      case 'save-calendar-structure': saveCalendarStructure(); break;
+      case 'load-gregorian-preset': loadGregorianPresetIntoDraft(); break;
+      case 'add-month-row': addMonthRow(); break;
+      case 'remove-month-row': if (rowIndex !== null) removeMonthRow(rowIndex); break;
+      case 'add-weekday-row': addWeekdayRow(); break;
+      case 'remove-weekday-row': if (rowIndex !== null) removeWeekdayRow(rowIndex); break;
 
       case 'open-add-pc': openAddPCModal(); break;
       case 'close-pc-modal': closeModal('#pcModalOverlay'); break;
@@ -829,6 +1057,7 @@
     if (e.key === 'Escape') {
       if (!$('#pcModalOverlay').hidden) closeModal('#pcModalOverlay');
       if (!$('#combatantModalOverlay').hidden) closeModal('#combatantModalOverlay');
+      if (!$('#calendarStructureModalOverlay').hidden) closeModal('#calendarStructureModalOverlay');
     }
   }
 

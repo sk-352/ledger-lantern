@@ -83,15 +83,32 @@
   <!-- ===================== CALENDAR TAB ===================== -->
   <section id="tab-calendar" class="tab-panel" role="tabpanel">
     <div class="calendar-hero">
-      <div class="calendar-day-huge"><span id="dayNumberHuge">1</span></div>
-      <p class="calendar-caption">has dawned upon the realm</p>
+      <div class="calendar-date-huge" id="calendarDateHuge">14 January</div>
+      <p class="calendar-subline" id="calendarSubline">Wednesday · Year 1</p>
+      <p class="calendar-day-counter" id="calendarDayCounter">Campaign Day 1</p>
+    </div>
+
+    <div class="calendar-advance-form calendar-jump-form">
+      <label>Jump to a specific date <span class="optional-tag">(corrects the calendar without advancing time)</span></label>
+      <div class="jump-fields">
+        <div class="field"><label for="jumpYear">Year</label><input type="number" id="jumpYear"></div>
+        <div class="field"><label for="jumpMonth">Month</label><select id="jumpMonth"></select></div>
+        <div class="field"><label for="jumpDay">Day</label><input type="number" id="jumpDay" min="1"></div>
+        <div class="field"><label for="jumpWeekday">Weekday</label><select id="jumpWeekday"></select></div>
+      </div>
+      <button class="btn btn-ghost" data-action="set-current-date">Set Date</button>
     </div>
 
     <div class="calendar-advance-form">
       <label for="dayNoteInput">What happened today? <span class="optional-tag">(optional)</span></label>
       <textarea id="dayNoteInput" rows="2" placeholder="The party made camp outside the ruined watchtower…"></textarea>
       <button class="btn btn-brass" data-action="advance-day-with-note">Advance to Next Day →</button>
-      <p class="calendar-hint">Advancing the day marks every character Tired and Hungry. Clear those effects from the Party tab when the party rests or eats.</p>
+      <p class="calendar-hint">Advancing the day marks every character Tired and Hungry, and moves the calendar forward one day. Clear those effects from the Party tab when the party rests or eats.</p>
+    </div>
+
+    <div class="calendar-structure-toolbar">
+      <button class="btn btn-ghost btn-small" data-action="open-calendar-structure">⚙ Customize Months &amp; Weekdays</button>
+      <span class="calendar-structure-hint">Defaults to a standard Gregorian calendar — rename months, change their length, or build an entirely custom fantasy calendar.</span>
     </div>
 
     <h2 class="log-heading">Chronicle</h2>
@@ -211,6 +228,27 @@
         <button type="submit" class="btn btn-brass">Add to Battle</button>
       </div>
     </form>
+  </div>
+</div>
+
+<!-- ===================== CALENDAR STRUCTURE MODAL ===================== -->
+<div class="modal-overlay" id="calendarStructureModalOverlay" hidden>
+  <div class="modal modal-wide" role="dialog" aria-modal="true" aria-labelledby="calendarStructureModalTitle">
+    <h2 id="calendarStructureModalTitle">Customize Calendar</h2>
+    <button type="button" class="btn btn-ghost btn-small" data-action="load-gregorian-preset">Load Gregorian Preset</button>
+
+    <h3>Months</h3>
+    <div id="monthsEditorList"></div>
+    <button type="button" class="btn btn-ghost btn-small" data-action="add-month-row">+ Add Month</button>
+
+    <h3>Days of the Week</h3>
+    <div id="weekdaysEditorList"></div>
+    <button type="button" class="btn btn-ghost btn-small" data-action="add-weekday-row">+ Add Day</button>
+
+    <div class="modal-actions">
+      <button type="button" class="btn btn-ghost" data-action="close-calendar-structure">Cancel</button>
+      <button type="button" class="btn btn-brass" data-action="save-calendar-structure">Save Calendar</button>
+    </div>
   </div>
 </div>
 

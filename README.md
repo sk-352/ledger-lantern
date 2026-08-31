@@ -53,14 +53,28 @@ browsers.
 - **End Combat** clears the battle order (character sheets are untouched).
 
 ### Calendar — Day tracker
-- A big **Day** counter for your campaign.
+- A full calendar date — day, month name, weekday, and year — front and
+  center, alongside the original **Campaign Day** counter (both always stay
+  in sync).
+- It defaults to a standard **Gregorian calendar** (January–December,
+  Sunday–Saturday) so it works out of the box with no setup.
+- **⚙ Customize Months & Weekdays** opens an editor where you can rename
+  months, change how many days each one has, add or remove months
+  entirely, and do the same for the days of the week — build any fantasy
+  calendar you like. **Load Gregorian Preset** resets the editor back to
+  the default before you save. Note: this calendar does not add leap days —
+  every year is the same length as defined in your month list.
+- **Jump to a specific date** lets you correct or set the current date
+  (year / month / day / weekday) directly, without clicking through
+  "Advance Day" — handy when starting a campaign mid-year or fixing a
+  mistake.
 - **Advance Day** (in the header, for a quick skip, or in the Calendar tab
   with an optional note about what happened) moves the calendar forward by
   one day **and marks every character Tired and Hungry** — exactly as
   requested: an effect that only goes away by your own input on the Party
   tab (or the Rest/Feed Whole Party buttons).
 - Every day you advance is recorded in the **Chronicle**, a running log of
-  your campaign's days and notes, newest first.
+  your campaign's days, calendar dates, and notes, newest first.
 
 ## Saving your campaign
 
