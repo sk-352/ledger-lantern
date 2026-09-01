@@ -51,8 +51,9 @@
     <div class="toolbar">
       <button class="btn btn-brass" data-action="open-add-pc">+ Add Character</button>
       <div class="toolbar-spacer"></div>
-      <button class="btn btn-ghost" data-action="rest-all" title="Clear Tired from every character">🛌 Rest Whole Party</button>
-      <button class="btn btn-ghost" data-action="feed-all" title="Clear Hungry from every character">🍖 Feed Whole Party</button>
+      <button class="btn btn-ghost" data-action="rest-all" title="Mark every character as having rested today">🛌 Rest Whole Party</button>
+      <button class="btn btn-ghost" data-action="feed-all-full" title="Mark every character as having eaten a full ration today">🍖 Full Rations</button>
+      <button class="btn btn-ghost" data-action="feed-all-half" title="Stretch supplies — mark every character as having eaten a half ration today">🍖 Half Rations</button>
     </div>
     <div id="pcList" class="pc-grid"></div>
   </section>
@@ -141,49 +142,89 @@
       <div class="field-grid abilities-grid">
         <div class="field ability-field">
           <label for="pcStr">STR</label>
-          <input type="number" id="pcStr" value="10" min="1" max="30">
+          <div class="number-stepper">
+            <button type="button" class="step-btn" data-action="field-step" data-target="pcStr" data-delta="-1" aria-label="Decrease STR">−</button>
+            <input type="number" id="pcStr" value="10" min="1" max="30">
+            <button type="button" class="step-btn" data-action="field-step" data-target="pcStr" data-delta="1" aria-label="Increase STR">+</button>
+          </div>
         </div>
         <div class="field ability-field">
           <label for="pcDex">DEX</label>
-          <input type="number" id="pcDex" value="10" min="1" max="30">
+          <div class="number-stepper">
+            <button type="button" class="step-btn" data-action="field-step" data-target="pcDex" data-delta="-1" aria-label="Decrease DEX">−</button>
+            <input type="number" id="pcDex" value="10" min="1" max="30">
+            <button type="button" class="step-btn" data-action="field-step" data-target="pcDex" data-delta="1" aria-label="Increase DEX">+</button>
+          </div>
         </div>
         <div class="field ability-field">
           <label for="pcCon">CON</label>
-          <input type="number" id="pcCon" value="10" min="1" max="30">
+          <div class="number-stepper">
+            <button type="button" class="step-btn" data-action="field-step" data-target="pcCon" data-delta="-1" aria-label="Decrease CON">−</button>
+            <input type="number" id="pcCon" value="10" min="1" max="30">
+            <button type="button" class="step-btn" data-action="field-step" data-target="pcCon" data-delta="1" aria-label="Increase CON">+</button>
+          </div>
         </div>
         <div class="field ability-field">
           <label for="pcWis">WIS</label>
-          <input type="number" id="pcWis" value="10" min="1" max="30">
+          <div class="number-stepper">
+            <button type="button" class="step-btn" data-action="field-step" data-target="pcWis" data-delta="-1" aria-label="Decrease WIS">−</button>
+            <input type="number" id="pcWis" value="10" min="1" max="30">
+            <button type="button" class="step-btn" data-action="field-step" data-target="pcWis" data-delta="1" aria-label="Increase WIS">+</button>
+          </div>
         </div>
         <div class="field ability-field">
           <label for="pcInt">INT</label>
-          <input type="number" id="pcInt" value="10" min="1" max="30">
+          <div class="number-stepper">
+            <button type="button" class="step-btn" data-action="field-step" data-target="pcInt" data-delta="-1" aria-label="Decrease INT">−</button>
+            <input type="number" id="pcInt" value="10" min="1" max="30">
+            <button type="button" class="step-btn" data-action="field-step" data-target="pcInt" data-delta="1" aria-label="Increase INT">+</button>
+          </div>
         </div>
         <div class="field ability-field">
           <label for="pcCha">CHA</label>
-          <input type="number" id="pcCha" value="10" min="1" max="30">
+          <div class="number-stepper">
+            <button type="button" class="step-btn" data-action="field-step" data-target="pcCha" data-delta="-1" aria-label="Decrease CHA">−</button>
+            <input type="number" id="pcCha" value="10" min="1" max="30">
+            <button type="button" class="step-btn" data-action="field-step" data-target="pcCha" data-delta="1" aria-label="Increase CHA">+</button>
+          </div>
         </div>
       </div>
 
       <div class="field-grid">
         <div class="field">
           <label for="pcAc">Armor Class</label>
-          <input type="number" id="pcAc" value="10" min="0" max="40">
+          <div class="number-stepper">
+            <button type="button" class="step-btn" data-action="field-step" data-target="pcAc" data-delta="-1" aria-label="Decrease Armor Class">−</button>
+            <input type="number" id="pcAc" value="10" min="0" max="40">
+            <button type="button" class="step-btn" data-action="field-step" data-target="pcAc" data-delta="1" aria-label="Increase Armor Class">+</button>
+          </div>
         </div>
         <div class="field">
           <label for="pcInitMod">Initiative Modifier</label>
-          <input type="number" id="pcInitMod" value="0" min="-10" max="20">
+          <div class="number-stepper">
+            <button type="button" class="step-btn" data-action="field-step" data-target="pcInitMod" data-delta="-1" aria-label="Decrease Initiative Modifier">−</button>
+            <input type="number" id="pcInitMod" value="0" min="-10" max="20">
+            <button type="button" class="step-btn" data-action="field-step" data-target="pcInitMod" data-delta="1" aria-label="Increase Initiative Modifier">+</button>
+          </div>
         </div>
       </div>
 
       <div class="field-grid">
         <div class="field">
           <label for="pcMaxHp">Max HP</label>
-          <input type="number" id="pcMaxHp" value="10" min="1" max="999">
+          <div class="number-stepper">
+            <button type="button" class="step-btn" data-action="field-step" data-target="pcMaxHp" data-delta="-1" aria-label="Decrease Max HP">−</button>
+            <input type="number" id="pcMaxHp" value="10" min="1" max="999">
+            <button type="button" class="step-btn" data-action="field-step" data-target="pcMaxHp" data-delta="1" aria-label="Increase Max HP">+</button>
+          </div>
         </div>
         <div class="field">
           <label for="pcCurrentHp">Current HP</label>
-          <input type="number" id="pcCurrentHp" value="10" min="0" max="999">
+          <div class="number-stepper">
+            <button type="button" class="step-btn" data-action="field-step" data-target="pcCurrentHp" data-delta="-1" aria-label="Decrease Current HP">−</button>
+            <input type="number" id="pcCurrentHp" value="10" min="0" max="999">
+            <button type="button" class="step-btn" data-action="field-step" data-target="pcCurrentHp" data-delta="1" aria-label="Increase Current HP">+</button>
+          </div>
         </div>
       </div>
 

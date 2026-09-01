@@ -22,6 +22,36 @@
   ];
   var GREGORIAN_WEEKDAYS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 
+  // 5e Exhaustion (index 0 = no effect). Effects are cumulative up to the
+  // current level; level 6 is fatal. Malnutrition and lack of rest are the
+  // two sources this app tracks automatically — anything else (extreme
+  // heat/cold, certain spells, forced marches) the DM adjusts by hand with
+  // the +/- stepper.
+  var EXHAUSTION_EFFECTS = [
+    'No effects.',
+    'Disadvantage on ability checks.',
+    'Speed halved.',
+    'Disadvantage on attack rolls and saving throws.',
+    'Hit point maximum halved.',
+    'Speed reduced to 0.',
+    'Death.'
+  ];
+  var CON_SAVE_DC = 10;
+
+  function exhaustionSummary(level) {
+    if (level <= 0) return EXHAUSTION_EFFECTS[0];
+    if (level >= 6) return EXHAUSTION_EFFECTS[6];
+    return EXHAUSTION_EFFECTS.slice(1, level + 1).join(' ');
+  }
+
+  function exhaustionLevelClass(level) {
+    if (level <= 0) return 'lvl-0';
+    if (level <= 2) return 'lvl-low';
+    if (level <= 4) return 'lvl-mid';
+    if (level === 5) return 'lvl-high';
+    return 'lvl-death';
+  }
+
   /* ---------------------------------------------------------- */
   /* State                                                       */
   /* ---------------------------------------------------------- */
@@ -95,6 +125,7 @@
     p = p || {};
     var a = p.abilities || {};
     var maxHp = numOr(p.hp && p.hp.max, 10);
+    var meal = (p.mealStatus === 'half' || p.mealStatus === 'full') ? p.mealStatus : 'none';
     return {
       id: p.id || uid(),
       name: typeof p.name === 'string' && p.name.trim() ? p.name : 'Unnamed',
@@ -105,8 +136,11 @@
       ac: numOr(p.ac, 10),
       initMod: numOr(p.initMod, 0),
       hp: { current: clamp(numOr(p.hp && p.hp.current, maxHp), 0, maxHp), max: Math.max(1, maxHp) },
-      tired: !!p.tired,
-      hungry: !!p.hungry,
+      exhaustion: clamp(Math.round(numOr(p.exhaustion, 0)), 0, 6),
+      mealStatus: meal,
+      restedToday: !!p.restedToday,
+      daysWithoutFood: Math.max(0, Math.round(numOr(p.daysWithoutFood, 0))),
+      daysWithoutRest: Math.max(0, Math.round(numOr(p.daysWithoutRest, 0))),
       notes: typeof p.notes === 'string' ? p.notes : ''
     };
   }
@@ -135,7 +169,16 @@
     return {
       campaignName: typeof parsed.campaignName === 'string' && parsed.campaignName.trim() ? parsed.campaignName : d.campaignName,
       day: Number.isFinite(parsed.day) ? parsed.day : d.day,
-      log: Array.isArray(parsed.log) ? parsed.log.filter(function (e) { return e && Number.isFinite(e.day); }) : [],
+      log: Array.isArray(parsed.log) ? parsed.log
+        .filter(function (e) { return e && Number.isFinite(e.day); })
+        .map(function (e) {
+          return {
+            day: e.day,
+            note: typeof e.note === 'string' ? e.note : '',
+            dateLabel: typeof e.dateLabel === 'string' ? e.dateLabel : '',
+            exhaustionNotes: Array.isArray(e.exhaustionNotes) ? e.exhaustionNotes.filter(function (l) { return typeof l === 'string'; }) : []
+          };
+        }) : [],
       pcs: Array.isArray(parsed.pcs) ? parsed.pcs.map(normalizePC) : [],
       combat: (parsed.combat && typeof parsed.combat === 'object') ? {
         round: Number.isFinite(parsed.combat.round) ? parsed.combat.round : 1,
@@ -253,12 +296,43 @@
           '</div>' +
           '<span class="hp-max">/ ' + pc.hp.max + '</span>' +
         '</div>' +
-        '<div class="status-row">' +
-          '<button class="ink-stamp stamp-tired' + (pc.tired ? ' active' : '') + '" data-action="toggle-tired" title="Toggle Tired">Tired</button>' +
-          '<button class="ink-stamp stamp-hungry' + (pc.hungry ? ' active' : '') + '" data-action="toggle-hungry" title="Toggle Hungry">Hungry</button>' +
-        '</div>' +
+        pcExhaustionBlockHTML(pc) +
         (pc.notes ? '<div class="pc-notes">' + escapeHTML(pc.notes) + '</div>' : '') +
       '</div>'
+    );
+  }
+
+  function pcExhaustionBlockHTML(pc) {
+    var streaks = '';
+    if (pc.daysWithoutFood > 0) streaks += '<span class="stat-pill">🍽 ' + pc.daysWithoutFood + 'd without food</span>';
+    if (pc.daysWithoutRest > 0) streaks += '<span class="stat-pill">😴 ' + pc.daysWithoutRest + 'd without rest</span>';
+
+    return (
+      '<div class="exhaustion-block">' +
+        '<div class="exhaustion-header">' +
+          '<span class="exhaustion-title">Exhaustion</span>' +
+          '<div class="exhaustion-stepper">' +
+            '<button class="hp-step-btn" data-action="exhaustion-minus" title="-1 level">−</button>' +
+            '<span class="exhaustion-level ' + exhaustionLevelClass(pc.exhaustion) + '">' + (pc.exhaustion >= 6 ? '☠' : pc.exhaustion) + '</span>' +
+            '<button class="hp-step-btn" data-action="exhaustion-plus" title="+1 level">+</button>' +
+          '</div>' +
+        '</div>' +
+        '<p class="exhaustion-effect">' + exhaustionSummary(pc.exhaustion) + '</p>' +
+      '</div>' +
+      '<div class="daily-row">' +
+        '<div class="daily-field">' +
+          '<label>Ate today</label>' +
+          '<select data-action="meal-select">' +
+            '<option value="none"' + (pc.mealStatus === 'none' ? ' selected' : '') + '>None</option>' +
+            '<option value="half"' + (pc.mealStatus === 'half' ? ' selected' : '') + '>Half ration</option>' +
+            '<option value="full"' + (pc.mealStatus === 'full' ? ' selected' : '') + '>Full ration</option>' +
+          '</select>' +
+        '</div>' +
+        '<label class="rested-check">' +
+          '<input type="checkbox" data-action="rested-check"' + (pc.restedToday ? ' checked' : '') + '> Rested today' +
+        '</label>' +
+      '</div>' +
+      (streaks ? '<div class="streak-row">' + streaks + '</div>' : '')
     );
   }
 
@@ -365,12 +439,16 @@
       return;
     }
     log.innerHTML = state.log.map(function (entry) {
+      var notesHTML = (entry.exhaustionNotes && entry.exhaustionNotes.length)
+        ? '<ul class="day-log-exhaustion">' + entry.exhaustionNotes.map(function (line) { return '<li>' + escapeHTML(line) + '</li>'; }).join('') + '</ul>'
+        : '';
       return (
         '<div class="day-log-entry">' +
           '<div class="day-log-day">Day ' + entry.day + '</div>' +
           '<div class="day-log-body">' +
             (entry.dateLabel ? '<div class="day-log-date">' + escapeHTML(entry.dateLabel) + '</div>' : '') +
             '<div class="day-log-note">' + (entry.note ? escapeHTML(entry.note) : '<span class="hpmini-none">No notes recorded.</span>') + '</div>' +
+            notesHTML +
           '</div>' +
         '</div>'
       );
@@ -459,8 +537,6 @@
       }
     } else {
       data.id = uid();
-      data.tired = false;
-      data.hungry = false;
       state.pcs.push(normalizePC(data));
     }
     saveState();
@@ -502,32 +578,40 @@
     renderPartyTab();
   }
 
-  function toggleTired(id) {
+  function adjustExhaustion(id, delta) {
     var pc = findPC(id);
     if (!pc) return;
-    pc.tired = !pc.tired;
+    pc.exhaustion = clamp(pc.exhaustion + delta, 0, 6);
     saveState();
     renderPartyTab();
   }
 
-  function toggleHungry(id) {
+  function setMealStatus(id, value) {
     var pc = findPC(id);
     if (!pc) return;
-    pc.hungry = !pc.hungry;
+    pc.mealStatus = (value === 'half' || value === 'full') ? value : 'none';
+    saveState();
+    renderPartyTab();
+  }
+
+  function setRestedToday(id, checked) {
+    var pc = findPC(id);
+    if (!pc) return;
+    pc.restedToday = !!checked;
     saveState();
     renderPartyTab();
   }
 
   function restAll() {
     if (state.pcs.length === 0) return;
-    state.pcs.forEach(function (p) { p.tired = false; });
+    state.pcs.forEach(function (p) { p.restedToday = true; });
     saveState();
     renderPartyTab();
   }
 
-  function feedAll() {
+  function feedAll(portion) {
     if (state.pcs.length === 0) return;
-    state.pcs.forEach(function (p) { p.hungry = false; });
+    state.pcs.forEach(function (p) { p.mealStatus = portion; });
     saveState();
     renderPartyTab();
   }
@@ -709,11 +793,71 @@
   /* Calendar actions                                             */
   /* ---------------------------------------------------------- */
 
+  function processDailyNeeds(pc) {
+    var lines = [];
+    var conMod = abilityMod(pc.abilities.con);
+    var meal = pc.mealStatus;
+    var wasRested = pc.restedToday;
+
+    if (meal === 'full') {
+      pc.daysWithoutFood = 0;
+    } else if (meal === 'half') {
+      pc.daysWithoutFood = 0;
+      var foodRoll = rollD20();
+      var foodTotal = foodRoll + conMod;
+      if (foodTotal < CON_SAVE_DC) {
+        pc.exhaustion = clamp(pc.exhaustion + 1, 0, 6);
+        lines.push(pc.name + ': skipped a full meal, failed the DC ' + CON_SAVE_DC + ' CON save (rolled ' + foodRoll + ' ' + fmtMod(conMod) + ' = ' + foodTotal + ') — Exhaustion ' + (pc.exhaustion - 1) + '→' + pc.exhaustion + '.');
+      } else {
+        lines.push(pc.name + ': skipped a full meal but passed the DC ' + CON_SAVE_DC + ' CON save (rolled ' + foodRoll + ' ' + fmtMod(conMod) + ' = ' + foodTotal + ').');
+      }
+    } else {
+      pc.daysWithoutFood += 1;
+      if (pc.daysWithoutFood >= 5) {
+        var before = pc.exhaustion;
+        pc.exhaustion = clamp(pc.exhaustion + 1, 0, 6);
+        lines.push(pc.name + ': ' + pc.daysWithoutFood + ' days without food — automatic Exhaustion ' + before + '→' + pc.exhaustion + '.');
+      }
+    }
+
+    if (wasRested) {
+      pc.daysWithoutRest = 0;
+    } else {
+      pc.daysWithoutRest += 1;
+      if (pc.daysWithoutRest >= 2) {
+        var restRoll = rollD20();
+        var restTotal = restRoll + conMod;
+        if (restTotal < CON_SAVE_DC) {
+          pc.exhaustion = clamp(pc.exhaustion + 1, 0, 6);
+          lines.push(pc.name + ": hasn't rested in " + pc.daysWithoutRest + ' days, failed the DC ' + CON_SAVE_DC + ' CON save (rolled ' + restRoll + ' ' + fmtMod(conMod) + ' = ' + restTotal + ') — Exhaustion ' + (pc.exhaustion - 1) + '→' + pc.exhaustion + '.');
+        } else {
+          lines.push(pc.name + ": hasn't rested in " + pc.daysWithoutRest + ' days but passed the DC ' + CON_SAVE_DC + ' CON save (rolled ' + restRoll + ' ' + fmtMod(conMod) + ' = ' + restTotal + ').');
+        }
+      }
+    }
+
+    if (wasRested && meal === 'full' && pc.exhaustion > 0) {
+      var beforeRecover = pc.exhaustion;
+      pc.exhaustion = clamp(pc.exhaustion - 1, 0, 6);
+      lines.push(pc.name + ': rested well-fed — Exhaustion eased ' + beforeRecover + '→' + pc.exhaustion + '.');
+    }
+
+    pc.mealStatus = 'none';
+    pc.restedToday = false;
+    return lines;
+  }
+
   function advanceDay(note) {
     var closingDay = state.day;
     var dateLabel = formatCalendarDateLabel(state.calendar);
-    state.log.unshift({ day: closingDay, note: (note || '').trim(), dateLabel: dateLabel });
-    state.pcs.forEach(function (p) { p.tired = true; p.hungry = true; });
+
+    var exhaustionNotes = [];
+    state.pcs.forEach(function (p) {
+      var lines = processDailyNeeds(p);
+      exhaustionNotes = exhaustionNotes.concat(lines);
+    });
+
+    state.log.unshift({ day: closingDay, note: (note || '').trim(), dateLabel: dateLabel, exhaustionNotes: exhaustionNotes });
     state.day = closingDay + 1;
     advanceCalendarOneDay(state.calendar);
     saveState();
@@ -723,7 +867,7 @@
   }
 
   function advanceDayQuick() {
-    if (!confirm('Advance to Day ' + (state.day + 1) + '? Every character will become Tired and Hungry.')) return;
+    if (!confirm('Advance to Day ' + (state.day + 1) + "? Each character's food and rest for the day will be resolved, which may trigger Exhaustion.")) return;
     advanceDay('');
   }
 
@@ -1000,12 +1144,13 @@
       case 'close-pc-modal': closeModal('#pcModalOverlay'); break;
       case 'edit-pc': if (pcId) openEditPCModal(pcId); break;
       case 'delete-pc': if (pcId) deletePC(pcId); break;
-      case 'toggle-tired': if (pcId) toggleTired(pcId); break;
-      case 'toggle-hungry': if (pcId) toggleHungry(pcId); break;
+      case 'exhaustion-minus': if (pcId) adjustExhaustion(pcId, -1); break;
+      case 'exhaustion-plus': if (pcId) adjustExhaustion(pcId, 1); break;
       case 'pc-hp-minus': if (pcId) adjustPCHP(pcId, -1); break;
       case 'pc-hp-plus': if (pcId) adjustPCHP(pcId, 1); break;
       case 'rest-all': restAll(); break;
-      case 'feed-all': feedAll(); break;
+      case 'feed-all-full': feedAll('full'); break;
+      case 'feed-all-half': feedAll('half'); break;
 
       case 'open-add-combatant': openAddCombatantModal(); break;
       case 'close-combatant-modal': closeModal('#combatantModalOverlay'); break;
@@ -1040,6 +1185,8 @@
     if (action === 'pc-hp-input' && pcId) setPCHP(pcId, e.target.value);
     if (action === 'comb-hp-input' && combId) setCombatantHP(combId, e.target.value);
     if (action === 'roll-input' && combId) setRoll(combId, e.target.value);
+    if (action === 'meal-select' && pcId) setMealStatus(pcId, e.target.value);
+    if (action === 'rested-check' && pcId) setRestedToday(pcId, e.target.checked);
   }
 
   function handleSubmit(e) {

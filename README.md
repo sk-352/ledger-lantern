@@ -25,14 +25,34 @@ browsers.
 - Add characters with **STR, DEX, CON, WIS, INT, CHA**, **Armor Class**, an
   **Initiative Modifier**, and **HP** (current/max). Ability modifiers are
   calculated automatically next to each score.
-- Track **Tired** and **Hungry** as toggleable status stamps on each
-  character card. These only change when *you* click them (or via the bulk
-  actions below) — the app never clears them on its own.
-- **Rest Whole Party** clears Tired for everyone; **Feed Whole Party** clears
-  Hungry for everyone. Handy after a long rest or a shared meal.
+- **Exhaustion** is tracked as a single leveled stat (0–6), following the 5e
+  Exhaustion rules — the current level's effects (and every level below it)
+  are shown right on the card, up to level 6, which is fatal. Adjust it
+  manually any time with the −/+ stepper (for anything outside food and
+  rest — extreme heat, certain spells, forced marches, and so on).
+- Each character has two daily fields you set before advancing the day:
+  **Ate today** (None / Half ration / Full ration) and **Rested today**.
+  When you advance the day, the app resolves both automatically per the
+  malnutrition and lack-of-rest rules: a half ration risks a DC 10
+  Constitution save (rolled for you, using the character's CON) or +1
+  Exhaustion; skipping food entirely for 5 straight days adds +1 Exhaustion
+  automatically (and again every day after); missing a second straight day
+  of rest risks the same DC 10 save; and a day spent well-fed **and**
+  rested eases Exhaustion down by 1. Every roll and result is written into
+  that day's Chronicle entry, and small chips on the card track running
+  streaks ("3d without food").
+- **Rest Whole Party** marks everyone as rested today; **Full Rations** /
+  **Half Rations** set everyone's meal for today in one click (half rations
+  is there for deliberately stretching low supplies). These just set the
+  day's intent — nothing happens until you advance the day.
 - Quick HP adjustment with −/+ buttons or by typing a value directly.
 - Edit or remove any character at any time. Optional free-text notes per
   character (class, background, quirks, whatever you like).
+
+  *Simplification:* reducing Exhaustion always requires both a rest **and**
+  a full ration that same day, even for Exhaustion that didn't come from
+  hunger — this keeps recovery consistent without tracking which level
+  came from which cause.
 
 ### Initiative — Battle order organizer
 - **Load Party** pulls every character from the Party tab into the battle

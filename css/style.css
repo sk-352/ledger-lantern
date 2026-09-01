@@ -417,30 +417,72 @@ main {
 .hp-step-btn:hover { border-color: var(--brass); }
 .hp-max { color: var(--text-faint); font-family: var(--font-mono); font-size: 0.78rem; }
 
-.status-row { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 6px; }
-
-.ink-stamp {
-  font-family: var(--font-display);
-  font-size: 0.68rem;
-  letter-spacing: 0.12em;
+.exhaustion-block {
+  background: rgba(0,0,0,0.2);
+  border: 1px solid var(--border-soft);
+  border-radius: var(--radius);
+  padding: 8px 10px;
+  margin-bottom: 10px;
+}
+.exhaustion-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+.exhaustion-title {
+  font-size: 0.72rem;
+  letter-spacing: 0.08em;
   text-transform: uppercase;
-  font-weight: 700;
-  padding: 3px 10px;
+  color: var(--text-muted);
+}
+.exhaustion-stepper { display: flex; align-items: center; gap: 6px; }
+.exhaustion-level {
+  min-width: 26px;
+  height: 26px;
+  padding: 0 4px;
+  border-radius: 50%;
   border: 2px solid currentColor;
-  border-radius: 3px;
-  transform: rotate(-3deg);
-  background: transparent;
-  opacity: 0.35;
-  transition: opacity 0.15s ease, transform 0.15s ease;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-mono);
+  font-weight: 700;
+  font-size: 0.85rem;
 }
-.ink-stamp.stamp-tired { color: var(--brass-bright); }
-.ink-stamp.stamp-hungry { color: var(--oxblood-bright); }
-.ink-stamp.active {
-  opacity: 1;
-  transform: rotate(-3deg) scale(1.03);
-  box-shadow: 0 0 0 1px currentColor inset;
+.exhaustion-level.lvl-0 { color: var(--forest-bright); }
+.exhaustion-level.lvl-low { color: var(--brass-bright); }
+.exhaustion-level.lvl-mid { color: var(--oxblood-bright); }
+.exhaustion-level.lvl-high { color: var(--oxblood-bright); background: rgba(122,43,38,0.25); }
+.exhaustion-level.lvl-death { color: #f4e9d8; background: var(--oxblood); border-color: var(--oxblood-bright); }
+.exhaustion-effect {
+  margin: 6px 0 0;
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  font-style: italic;
 }
-.ink-stamp:hover { opacity: 0.8; }
+
+.daily-row {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  flex-wrap: wrap;
+  margin-bottom: 8px;
+}
+.daily-field { display: flex; align-items: center; gap: 6px; }
+.daily-field label { font-size: 0.72rem; color: var(--text-muted); }
+.daily-field select { font-size: 0.78rem; padding: 4px 6px; }
+.rested-check {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.78rem;
+  color: var(--text-muted);
+  cursor: pointer;
+}
+.rested-check input { accent-color: var(--brass); }
+
+.streak-row { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 6px; }
 
 .pc-notes {
   font-size: 0.8rem;
@@ -702,6 +744,13 @@ input[type="number"] {
   margin-bottom: 2px;
 }
 .day-log-note { color: var(--text-muted); }
+.day-log-exhaustion {
+  margin: 6px 0 0;
+  padding-left: 16px;
+  font-size: 0.74rem;
+  color: var(--text-faint);
+}
+.day-log-exhaustion li { margin-bottom: 2px; }
 
 /* ---- Calendar structure editor (months / weekdays) ---- */
 
