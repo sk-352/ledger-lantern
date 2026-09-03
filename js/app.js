@@ -228,6 +228,18 @@
   function $(sel, root) { return (root || document).querySelector(sel); }
   function $all(sel, root) { return Array.prototype.slice.call((root || document).querySelectorAll(sel)); }
 
+  // Generic +/- for any modal number field, driven by data-target/data-delta
+  // on the button — used by every stepper in the PC and Combatant forms.
+  function stepField(targetId, delta) {
+    var el = document.getElementById(targetId);
+    if (!el) return;
+    var min = el.min !== '' ? parseFloat(el.min) : -Infinity;
+    var max = el.max !== '' ? parseFloat(el.max) : Infinity;
+    var current = parseFloat(el.value);
+    if (isNaN(current)) current = 0;
+    el.value = clamp(current + delta, min, max);
+  }
+
   var savedIndicatorTimer = null;
   function showSavedIndicator() {
     var el = $('#saveIndicator');
@@ -1126,6 +1138,12 @@
     var rowIndex = indexAttr !== null ? parseInt(indexAttr, 10) : null;
 
     switch (action) {
+      case 'field-step': {
+        var target = actionEl.getAttribute('data-target');
+        var delta = parseFloat(actionEl.getAttribute('data-delta')) || 0;
+        if (target) stepField(target, delta);
+        break;
+      }
       case 'edit-campaign-name': editCampaignName(); break;
       case 'advance-day-quick': advanceDayQuick(); break;
       case 'advance-day-with-note': advanceDayWithNote(); break;

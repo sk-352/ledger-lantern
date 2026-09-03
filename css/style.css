@@ -413,6 +413,7 @@ main {
   align-items: center;
   justify-content: center;
   padding: 0;
+  flex-shrink: 0;
 }
 .hp-step-btn:hover { border-color: var(--brass); }
 .hp-max { color: var(--text-faint); font-family: var(--font-mono); font-size: 0.78rem; }
@@ -637,25 +638,31 @@ input[type="text"]:focus, input[type="number"]:focus, textarea:focus {
 }
 input[type="number"] { font-family: var(--font-mono); }
 
-/* Only the narrow fields that have their own custom +/- buttons (HP, Roll)
-   get their native spinner hidden — those buttons were overlapping the
-   digits. Everywhere else (the character/monster forms) keeps the
-   browser's native spinner, since that's the only +/- control there. */
+/* Every field that has its own custom +/- buttons (HP, Roll, and now every
+   number field in the modals) gets its native spinner hidden — the two
+   controls fighting for the same space is what caused the digits (or the
+   custom buttons) to look broken. */
 .hp-controls input::-webkit-inner-spin-button,
 .hp-controls input::-webkit-outer-spin-button,
 .hpmini-block input::-webkit-inner-spin-button,
 .hpmini-block input::-webkit-outer-spin-button,
 .roll-block input::-webkit-inner-spin-button,
-.roll-block input::-webkit-outer-spin-button {
+.roll-block input::-webkit-outer-spin-button,
+.number-stepper input::-webkit-inner-spin-button,
+.number-stepper input::-webkit-outer-spin-button {
   -webkit-appearance: none;
   margin: 0;
 }
 .hp-controls input,
 .hpmini-block input,
-.roll-block input {
+.roll-block input,
+.number-stepper input {
   -moz-appearance: textfield;
   appearance: textfield;
 }
+
+.number-stepper { display: flex; align-items: center; gap: 6px; }
+.number-stepper input { flex: 1; min-width: 0; text-align: center; }
 
 /* ============================== CALENDAR ============================== */
 
