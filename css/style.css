@@ -637,15 +637,22 @@ input[type="text"]:focus, input[type="number"]:focus, textarea:focus {
 }
 input[type="number"] { font-family: var(--font-mono); }
 
-/* We provide our own +/- controls everywhere numbers are edited, so the
-   browser's native spinner arrows are just visual clutter — and in narrow
-   fields (HP, Roll) they were covering the digits entirely. Hide them. */
-input[type="number"]::-webkit-inner-spin-button,
-input[type="number"]::-webkit-outer-spin-button {
+/* Only the narrow fields that have their own custom +/- buttons (HP, Roll)
+   get their native spinner hidden — those buttons were overlapping the
+   digits. Everywhere else (the character/monster forms) keeps the
+   browser's native spinner, since that's the only +/- control there. */
+.hp-controls input::-webkit-inner-spin-button,
+.hp-controls input::-webkit-outer-spin-button,
+.hpmini-block input::-webkit-inner-spin-button,
+.hpmini-block input::-webkit-outer-spin-button,
+.roll-block input::-webkit-inner-spin-button,
+.roll-block input::-webkit-outer-spin-button {
   -webkit-appearance: none;
   margin: 0;
 }
-input[type="number"] {
+.hp-controls input,
+.hpmini-block input,
+.roll-block input {
   -moz-appearance: textfield;
   appearance: textfield;
 }
