@@ -47,14 +47,15 @@
     none: { label: 'None', groups: [], table: {} },
     wizard: {
       label: 'Wizard',
+      hitDie: 6,
       groups: [
-        { key: 'arcaneRecovery', label: 'Arcane Recovery', resources: [
+        { key: 'arcaneRecovery', label: 'Arcane Recovery', rechargeOn: 'short', resources: [
           { key: 'arcaneRecovery', label: 'Arcane Recovery' }
         ], noteFn: function (level) {
           var pool = Math.ceil(level / 2);
           return 'Recovers expended slots totaling up to ' + pool + ' level' + (pool === 1 ? '' : 's') + ' (none 6th level or higher). Currently tracked as a once-per-day use — full short/long rest timing is planned.';
         } },
-        { key: 'spellSlots', label: 'Spell Slots', resources: [
+        { key: 'spellSlots', label: 'Spell Slots', rechargeOn: 'long', resources: [
           { key: 'slot1', label: 'Level 1' },
           { key: 'slot2', label: 'Level 2' },
           { key: 'slot3', label: 'Level 3' },
@@ -94,8 +95,9 @@
     },
     fighter: {
       label: 'Fighter',
+      hitDie: 10,
       groups: [
-        { key: 'secondWind', label: 'Second Wind', resources: [
+        { key: 'secondWind', label: 'Second Wind', rechargeOn: 'short', resources: [
           { key: 'secondWind', label: 'Second Wind' }
         ] }
       ],
@@ -144,6 +146,19 @@
     return 2 + Math.floor((lvl - 1) / 4);
   }
 
+  // Resets resourceUsed for every group whose rechargeOn matches one of the
+  // given tags — e.g. rechargeResources(pc, ['short','long']) after a Short
+  // Rest, or rechargeResources(pc, ['day']) at day-rollover.
+  function rechargeResources(pc, tags) {
+    var def = getClassDef(pc.className);
+    def.groups.forEach(function (group) {
+      if (tags.indexOf(group.rechargeOn) === -1) return;
+      group.resources.forEach(function (res) {
+        delete pc.resourceUsed[res.key];
+      });
+    });
+  }
+
   function exhaustionSummary(level) {
     if (level <= 0) return EXHAUSTION_EFFECTS[0];
     if (level >= 6) return EXHAUSTION_EFFECTS[6];
@@ -178,7 +193,7 @@
 
   function defaultState() {
     var cal = defaultCalendarStructure();
-    cal.current = { year: 1, monthIndex: 0, day: 1, weekdayIndex: 0 };
+    cal.current = { year: 1, monthIndex: 0, day: 1, weekdayIndex: 0, hour: 6 };
     return {
       campaignName: 'Ledger & Lantern',
       day: 1,
@@ -208,8 +223,9 @@
     var day = Number.isFinite(raw.day) ? clamp(Math.round(raw.day), 1, months[monthIndex].days) : 1;
     var weekdayIndex = Number.isFinite(raw.weekdayIndex) ? clamp(Math.round(raw.weekdayIndex), 0, weekdays.length - 1) : 0;
     var year = Number.isFinite(raw.year) ? Math.round(raw.year) : 1;
+    var hour = Number.isFinite(raw.hour) ? clamp(Math.round(raw.hour), 0, 23) : 6;
 
-    return { months: months, weekdays: weekdays, current: { year: year, monthIndex: monthIndex, day: day, weekdayIndex: weekdayIndex } };
+    return { months: months, weekdays: weekdays, current: { year: year, monthIndex: monthIndex, day: day, weekdayIndex: weekdayIndex, hour: hour } };
   }
 
   function advanceCalendarOneDay(cal) {
@@ -230,6 +246,10 @@
     var m = cal.months[cal.current.monthIndex];
     var w = cal.weekdays[cal.current.weekdayIndex];
     return w + ', ' + cal.current.day + ' ' + m.name + ', Year ' + cal.current.year;
+  }
+
+  function formatHour(hour) {
+    return (hour < 10 ? '0' : '') + hour + ':00';
   }
 
   function normalizePC(p) {
@@ -263,6 +283,7 @@
       daysWithoutRest: Math.max(0, Math.round(numOr(p.daysWithoutRest, 0))),
       className: className,
       classLevel: classLevel,
+      hitDice: { used: clamp(Math.round(numOr(p.hitDice && p.hitDice.used, 0)), 0, classLevel) },
       resourceUsed: resourceUsed,
       notes: typeof p.notes === 'string' ? p.notes : ''
     };
@@ -444,43 +465,69 @@
 
   function classFeaturesBlockHTML(pc) {
     var def = getClassDef(pc.className);
-    if (pc.className === 'none' || def.groups.length === 0) return '';
     var level = pc.classLevel;
+    var groupMenus = '';
 
-    var menus = def.groups.map(function (group) {
-      var showLabel = group.resources.length > 1;
-      var rows = group.resources.map(function (res) {
-        var max = getResourceMax(pc.className, level, res.key);
-        if (max <= 0) return '';
-        var used = clamp(pc.resourceUsed[res.key] || 0, 0, max);
-        var pips = '';
-        for (var i = 0; i < max; i++) {
-          var filled = i < (max - used);
-          pips += filled
-            ? '<button type="button" class="pip filled" data-action="resource-spend" data-key="' + res.key + '" title="Spend"></button>'
-            : '<button type="button" class="pip hollow" data-action="resource-restore" data-key="' + res.key + '" title="Restore"></button>';
-        }
-        return '<div class="resource-row">' +
-          (showLabel ? '<span class="resource-label">' + escapeHTML(res.label) + '</span>' : '') +
-          '<div class="pip-row">' + pips + '</div>' +
-        '</div>';
+    if (pc.className !== 'none' && def.groups.length > 0) {
+      groupMenus = def.groups.map(function (group) {
+        var showLabel = group.resources.length > 1;
+        var rows = group.resources.map(function (res) {
+          var max = getResourceMax(pc.className, level, res.key);
+          if (max <= 0) return '';
+          var used = clamp(pc.resourceUsed[res.key] || 0, 0, max);
+          var pips = '';
+          for (var i = 0; i < max; i++) {
+            var filled = i < (max - used);
+            pips += filled
+              ? '<button type="button" class="pip filled" data-action="resource-spend" data-key="' + res.key + '" title="Spend"></button>'
+              : '<button type="button" class="pip hollow" data-action="resource-restore" data-key="' + res.key + '" title="Restore"></button>';
+          }
+          return '<div class="resource-row">' +
+            (showLabel ? '<span class="resource-label">' + escapeHTML(res.label) + '</span>' : '') +
+            '<div class="pip-row">' + pips + '</div>' +
+          '</div>';
+        }).join('');
+
+        if (!rows) return ''; // nothing in this group unlocked yet at this level
+
+        var noteHTML = group.noteFn ? '<p class="feature-menu-note">' + escapeHTML(group.noteFn(level)) + '</p>' : '';
+        var menuKey = pc.id + ':' + group.key;
+        var openAttr = openFeatureMenus[menuKey] ? ' open' : '';
+        return (
+          '<details class="feature-menu"' + openAttr + ' data-menu-key="' + menuKey + '">' +
+            '<summary>' + escapeHTML(group.label) + '</summary>' +
+            '<div class="feature-menu-panel">' + noteHTML + '<div class="resource-list">' + rows + '</div></div>' +
+          '</details>'
+        );
       }).join('');
+    }
 
-      if (!rows) return ''; // nothing in this group unlocked yet at this level
+    var all = groupMenus + hitDiceMenuHTML(pc);
+    if (!all) return '';
+    return '<div class="class-feature-menus">' + all + '</div>';
+  }
 
-      var noteHTML = group.noteFn ? '<p class="feature-menu-note">' + escapeHTML(group.noteFn(level)) + '</p>' : '';
-      var menuKey = pc.id + ':' + group.key;
-      var openAttr = openFeatureMenus[menuKey] ? ' open' : '';
-      return (
-        '<details class="feature-menu"' + openAttr + ' data-menu-key="' + menuKey + '">' +
-          '<summary>' + escapeHTML(group.label) + '</summary>' +
-          '<div class="feature-menu-panel">' + noteHTML + '<div class="resource-list">' + rows + '</div></div>' +
-        '</details>'
-      );
-    }).join('');
-
-    if (!menus) return '';
-    return '<div class="class-feature-menus">' + menus + '</div>';
+  function hitDiceMenuHTML(pc) {
+    var def = getClassDef(pc.className);
+    if (pc.className === 'none' || !Number.isFinite(def.hitDie)) return '';
+    var max = pc.classLevel;
+    var used = clamp(pc.hitDice.used, 0, max);
+    var pips = '';
+    for (var i = 0; i < max; i++) {
+      var filled = i < (max - used);
+      pips += filled
+        ? '<button type="button" class="pip filled" data-action="hitdie-spend" title="Roll 1d' + def.hitDie + ' + CON and heal"></button>'
+        : '<button type="button" class="pip hollow" data-action="hitdie-restore" title="Restore (undo, no healing)"></button>';
+    }
+    var menuKey = pc.id + ':hitDice';
+    var openAttr = openFeatureMenus[menuKey] ? ' open' : '';
+    var note = '<p class="feature-menu-note">Click a filled die to roll 1d' + def.hitDie + ' + CON modifier and heal (minimum 1). Spent dice are restored by a Long Rest.</p>';
+    return (
+      '<details class="feature-menu"' + openAttr + ' data-menu-key="' + menuKey + '">' +
+        '<summary>Hit Dice · d' + def.hitDie + '</summary>' +
+        '<div class="feature-menu-panel">' + note + '<div class="resource-list"><div class="resource-row"><div class="pip-row">' + pips + '</div></div></div></div>' +
+      '</details>'
+    );
   }
 
   function pcExhaustionBlockHTML(pc) {
@@ -595,7 +642,7 @@
     var w = cal.weekdays[cal.current.weekdayIndex];
 
     $('#calendarDateHuge').textContent = cal.current.day + ' ' + m.name;
-    $('#calendarSubline').textContent = w + ' · Year ' + cal.current.year;
+    $('#calendarSubline').textContent = w + ' · Year ' + cal.current.year + ' · ' + formatHour(cal.current.hour);
     $('#calendarDayCounter').textContent = 'Campaign Day ' + state.day;
 
     var monthSelect = $('#jumpMonth');
@@ -613,6 +660,7 @@
     $('#jumpYear').value = cal.current.year;
     $('#jumpDay').value = cal.current.day;
     $('#jumpDay').max = m.days;
+    $('#jumpHour').value = cal.current.hour;
 
     var log = $('#dayLog');
     if (state.log.length === 0) {
@@ -791,6 +839,30 @@
     if (!pc) return;
     var max = getResourceMax(pc.className, pc.classLevel, key);
     pc.resourceUsed[key] = clamp((pc.resourceUsed[key] || 0) - 1, 0, max);
+    saveState();
+    renderPartyTab();
+  }
+
+  function spendHitDie(id) {
+    var pc = findPC(id);
+    if (!pc || pc.className === 'none') return;
+    var def = getClassDef(pc.className);
+    if (!Number.isFinite(def.hitDie)) return;
+    var max = pc.classLevel;
+    if (pc.hitDice.used >= max) return;
+    var roll = Math.floor(Math.random() * def.hitDie) + 1;
+    var conMod = abilityMod(pc.abilities.con);
+    var healed = Math.max(1, roll + conMod);
+    pc.hitDice.used = clamp(pc.hitDice.used + 1, 0, max);
+    pc.hp.current = clamp(pc.hp.current + healed, 0, pc.hp.max);
+    saveState();
+    renderPartyTab();
+  }
+
+  function restoreHitDie(id) {
+    var pc = findPC(id);
+    if (!pc) return;
+    pc.hitDice.used = clamp(pc.hitDice.used - 1, 0, pc.classLevel);
     saveState();
     renderPartyTab();
   }
@@ -1008,10 +1080,10 @@
     var meal = pc.mealStatus;
     var wasRested = pc.restedToday;
 
-    // Class resources (spell slots, Second Wind, Weapon Mastery, ...) fully
-    // refill on day-passing for now — a temporary stand-in until the
-    // rest/food mechanic gets redesigned to be immediate.
-    pc.resourceUsed = {};
+    // Only resources tagged to recharge on day-passing reset here now —
+    // Spell Slots recharge on a Long Rest and Arcane Recovery / Second Wind
+    // recharge on a Short Rest, handled by takeShortRest()/takeLongRest().
+    rechargeResources(pc, ['day']);
 
     if (meal === 'full') {
       pc.daysWithoutFood = 0;
@@ -1050,18 +1122,16 @@
       }
     }
 
-    if (wasRested && meal === 'full' && pc.exhaustion > 0) {
-      var beforeRecover = pc.exhaustion;
-      pc.exhaustion = clamp(pc.exhaustion - 1, 0, 6);
-      lines.push(pc.name + ': rested well-fed — Exhaustion eased ' + beforeRecover + '→' + pc.exhaustion + '.');
-    }
-
     pc.mealStatus = 'none';
     pc.restedToday = false;
     return lines;
   }
 
-  function advanceDay(note) {
+  /* ---------------------------------------------------------- */
+  /* Clock: hours, and the day-rollover they can trigger          */
+  /* ---------------------------------------------------------- */
+
+  function resolveDayEnd(note) {
     var closingDay = state.day;
     var dateLabel = formatCalendarDateLabel(state.calendar);
 
@@ -1074,6 +1144,24 @@
     state.log.unshift({ day: closingDay, note: (note || '').trim(), dateLabel: dateLabel, exhaustionNotes: exhaustionNotes });
     state.day = closingDay + 1;
     advanceCalendarOneDay(state.calendar);
+  }
+
+  // The single place time moves forward. Crossing midnight resolves the day
+  // that just ended (food/rest checks, day-tagged resource refill, chronicle
+  // entry) exactly once, whether that happens via "Advance Day" or because a
+  // rest happened to run past midnight.
+  function passHours(n, note) {
+    var remainingNote = note;
+    state.calendar.current.hour += n;
+    while (state.calendar.current.hour >= 24) {
+      state.calendar.current.hour -= 24;
+      resolveDayEnd(remainingNote);
+      remainingNote = ''; // only the first day boundary crossed gets the DM's note
+    }
+  }
+
+  function advanceDay(note) {
+    passHours(24, note);
     saveState();
     renderHeader();
     renderPartyTab();
@@ -1091,6 +1179,42 @@
     $('#dayNoteInput').value = '';
   }
 
+  /* ---------------------------------------------------------- */
+  /* Rests                                                        */
+  /* ---------------------------------------------------------- */
+
+  function takeShortRest() {
+    if (state.pcs.length === 0) return;
+    if (!confirm('Take a Short Rest as a party? This advances the clock by 1 hour and recharges Short Rest features (Hit Dice can still be spent any time from their own menu).')) return;
+    passHours(1, '');
+    state.pcs.forEach(function (pc) {
+      if (pc.hp.current <= 0) return; // needs at least 1 HP to benefit
+      rechargeResources(pc, ['short']);
+    });
+    saveState();
+    renderHeader();
+    renderPartyTab();
+    renderCalendarTab();
+  }
+
+  function takeLongRest() {
+    if (state.pcs.length === 0) return;
+    if (!confirm('Take a Long Rest as a party? This advances the clock by 8 hours, fully heals everyone, restores Hit Dice, eases Exhaustion by 1 (if well-fed), and recharges Long/Short Rest features.')) return;
+    passHours(8, '');
+    state.pcs.forEach(function (pc) {
+      if (pc.hp.current <= 0) return; // needs at least 1 HP to benefit
+      pc.hp.current = pc.hp.max;
+      pc.hitDice.used = 0;
+      if (pc.mealStatus === 'full' && pc.exhaustion > 0) pc.exhaustion = clamp(pc.exhaustion - 1, 0, 6);
+      pc.restedToday = true;
+      rechargeResources(pc, ['short', 'long']);
+    });
+    saveState();
+    renderHeader();
+    renderPartyTab();
+    renderCalendarTab();
+  }
+
   function setCurrentDate() {
     var cal = state.calendar;
     var year = parseInt($('#jumpYear').value, 10);
@@ -1105,7 +1229,10 @@
     var weekdayIndex = parseInt($('#jumpWeekday').value, 10);
     if (isNaN(weekdayIndex) || weekdayIndex < 0 || weekdayIndex >= cal.weekdays.length) weekdayIndex = cal.current.weekdayIndex;
 
-    cal.current = { year: year, monthIndex: monthIndex, day: day, weekdayIndex: weekdayIndex };
+    var hour = clamp(parseInt($('#jumpHour').value, 10), 0, 23);
+    if (isNaN(hour)) hour = cal.current.hour;
+
+    cal.current = { year: year, monthIndex: monthIndex, day: day, weekdayIndex: weekdayIndex, hour: hour };
     saveState();
     renderCalendarTab();
   }
@@ -1368,6 +1495,10 @@
       case 'exhaustion-plus': if (pcId) adjustExhaustion(pcId, 1); break;
       case 'resource-spend': if (pcId) { var spendKey = actionEl.getAttribute('data-key'); if (spendKey) spendResource(pcId, spendKey); } break;
       case 'resource-restore': if (pcId) { var restoreKey = actionEl.getAttribute('data-key'); if (restoreKey) restoreResource(pcId, restoreKey); } break;
+      case 'hitdie-spend': if (pcId) spendHitDie(pcId); break;
+      case 'hitdie-restore': if (pcId) restoreHitDie(pcId); break;
+      case 'take-short-rest': takeShortRest(); break;
+      case 'take-long-rest': takeLongRest(); break;
       case 'pc-hp-minus': if (pcId) adjustPCHP(pcId, -1); break;
       case 'pc-hp-plus': if (pcId) adjustPCHP(pcId, 1); break;
       case 'rest-all': restAll(); break;

@@ -73,10 +73,10 @@ browsers.
   character (background, quirks, whatever you like) — saved with the
   character, though not currently shown on the card itself.
 
-  *Simplification:* reducing Exhaustion always requires both a rest **and**
-  a full ration that same day, even for Exhaustion that didn't come from
-  hunger — this keeps recovery consistent without tracking which level
-  came from which cause.
+  *Simplification:* Exhaustion only eases on a **Long Rest**, and only if
+  the character ate a full ration that same day — even for Exhaustion that
+  didn't come from hunger. This keeps recovery consistent without tracking
+  which level came from which cause.
 
 ### Initiative — Battle order organizer
 - **Load Party** pulls every character from the Party tab into the battle
@@ -96,10 +96,11 @@ browsers.
   the character's permanent record.
 - **End Combat** clears the battle order (character sheets are untouched).
 
-### Calendar — Day tracker
+### Calendar — Day & clock tracker
 - A full calendar date — day, month name, weekday, and year — front and
   center, alongside the original **Campaign Day** counter (both always stay
-  in sync).
+  in sync), plus a **clock** (hour of day, starts at 06:00 for a new
+  campaign).
 - It defaults to a standard **Gregorian calendar** (January–December,
   Sunday–Saturday) so it works out of the box with no setup.
 - **⚙ Customize Months & Weekdays** opens an editor where you can rename
@@ -108,17 +109,49 @@ browsers.
   calendar you like. **Load Gregorian Preset** resets the editor back to
   the default before you save. Note: this calendar does not add leap days —
   every year is the same length as defined in your month list.
-- **Jump to a specific date** lets you correct or set the current date
-  (year / month / day / weekday) directly, without clicking through
-  "Advance Day" — handy when starting a campaign mid-year or fixing a
-  mistake.
+- **Jump to a specific date** lets you correct or set the current date and
+  hour directly, without clicking through "Advance Day" — handy when
+  starting a campaign mid-year or fixing a mistake.
 - **Advance Day** (in the header, for a quick skip, or in the Calendar tab
-  with an optional note about what happened) moves the calendar forward by
-  one day **and marks every character Tired and Hungry** — exactly as
-  requested: an effect that only goes away by your own input on the Party
-  tab (or the Rest/Feed Whole Party buttons).
-- Every day you advance is recorded in the **Chronicle**, a running log of
-  your campaign's days, calendar dates, and notes, newest first.
+  with an optional note about what happened) moves the clock forward a
+  full 24 hours and resolves that day's food and rest for every character
+  (may trigger Exhaustion — see Rests below).
+- Every day that ends is recorded in the **Chronicle**, a running log of
+  your campaign's days, calendar dates, and notes, newest first — along
+  with a report of any Exhaustion saves or automatic effects that happened
+  that day.
+- The clock is the one shared mechanism behind all time passing in the
+  app: Short Rest, Long Rest, and Advance Day are really the same action
+  (advance the clock by 1, 8, or 24 hours) — so a rest that happens to run
+  past midnight resolves that day exactly once, same as clicking Advance
+  Day would.
+
+### Rests — Short Rest, Long Rest, and Hit Dice
+- **⏳ Short Rest** (Party tab toolbar) advances the clock 1 hour and
+  recharges every character's Short Rest features (currently: Wizard's
+  Arcane Recovery, Fighter's Second Wind).
+- **🌙 Long Rest** advances the clock 8 hours and, for every character with
+  at least 1 HP: fully heals them, restores all spent Hit Dice, eases
+  Exhaustion by 1 (only if they ate a full ration that day), marks them
+  rested for the day, and recharges both Long and Short Rest features
+  (Spell Slots included).
+- Both are **party-wide** actions — everyone rests together. There's no
+  per-character opt-out yet (e.g. someone standing watch through the
+  night); that granularity, along with proper rest-interruption tracking,
+  is planned but not built.
+- **Hit Dice** get their own dropdown per class-having character (die type
+  by class: Wizard d6, Fighter d10; count equals character level). Click a
+  filled die any time to roll it + your Constitution modifier and heal
+  (minimum 1) — not just right after a Short Rest, since this tool doesn't
+  enforce turn-by-turn timing. Only a Long Rest restores spent Hit Dice.
+- The old **🛌 Mark Rested (no effects)** button is still there for a
+  lightweight manual flag with no mechanical benefits, if you'd rather
+  skip the full Short/Long Rest machinery for a given day.
+- *Simplifications, for now:* rest interruptions (rolling initiative,
+  taking damage, casting a leveled spell) aren't detected automatically —
+  narrate them at the table and just don't click the rest button if one
+  happens. Ability score restoration isn't modeled (the app doesn't track
+  reduced ability scores). Long Rest's 16-hour cooldown isn't enforced.
 
 ## Saving your campaign
 
