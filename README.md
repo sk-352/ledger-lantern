@@ -45,9 +45,33 @@ browsers.
   **Half Rations** set everyone's meal for today in one click (half rations
   is there for deliberately stretching low supplies). These just set the
   day's intent — nothing happens until you advance the day.
+- Optionally give a character a **Class** (currently Wizard or Fighter — more
+  can be added later) and a **Level** (1–20). This unlocks small dropdown
+  menus on the card for that class's *daily-use* features — Wizard gets
+  separate **Arcane Recovery** and **Spell Slots** menus; Fighter gets a
+  **Second Wind** menu — each showing that feature's uses as clickable pip
+  trackers, D&D Beyond/Roll20-style: click a filled pip to spend it, click
+  a hollow one to give it back. These menus float above the card instead
+  of pushing its content down, and close when you click elsewhere.
+  Characters with no class selected show no menus at all, so martial-only
+  tables stay uncluttered.
+  *Current simplification:* these resources fully refill whenever you
+  advance the day (not tied to resting or eating) — a stand-in until the
+  rest/food mechanic gets reworked to be immediate. Spell Slots, Arcane
+  Recovery, and Second Wind all cover the full 1–20 range.
+  Every class also shows a read-only **Proficiency** pill (the same
+  progression for every class, by level: +2 at 1–4 up to +6 at 17–20) plus
+  whichever level-scaled reference numbers that class defines but doesn't
+  "spend" day to day — Wizard shows **Prepared** (Prepared Spells), Fighter
+  shows **Weapon Mastery** — as plain text next to the class/level pill,
+  not pips. The Arcane Recovery menu also includes a note on how many
+  spell-slot levels it actually recovers at the character's level; the
+  interaction of picking specific slots to recover is tied to short/long
+  rests, which aren't modeled yet.
 - Quick HP adjustment with −/+ buttons or by typing a value directly.
 - Edit or remove any character at any time. Optional free-text notes per
-  character (class, background, quirks, whatever you like).
+  character (background, quirks, whatever you like) — saved with the
+  character, though not currently shown on the card itself.
 
   *Simplification:* reducing Exhaustion always requires both a rest **and**
   a full ration that same day, even for Exhaustion that didn't come from

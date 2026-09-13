@@ -139,6 +139,25 @@
         <input type="text" id="pcName" required maxlength="40" placeholder="Vex Thornwood">
       </div>
 
+      <div class="field-grid">
+        <div class="field">
+          <label for="pcClass">Class</label>
+          <select id="pcClass">
+            <option value="none">— None —</option>
+            <option value="wizard">Wizard</option>
+            <option value="fighter">Fighter</option>
+          </select>
+        </div>
+        <div class="field">
+          <label for="pcClassLevel">Level</label>
+          <div class="number-stepper">
+            <button type="button" class="hp-step-btn" data-action="field-step" data-target="pcClassLevel" data-delta="-1" aria-label="Decrease Level">−</button>
+            <input type="number" id="pcClassLevel" value="1" min="1" max="20">
+            <button type="button" class="hp-step-btn" data-action="field-step" data-target="pcClassLevel" data-delta="1" aria-label="Increase Level">+</button>
+          </div>
+        </div>
+      </div>
+
       <div class="field-grid abilities-grid">
         <div class="field ability-field">
           <label for="pcStr">STR</label>

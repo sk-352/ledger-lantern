@@ -38,6 +38,112 @@
   ];
   var CON_SAVE_DC = 10;
 
+  // Class resources: which pip-tracked features a class has, and how many
+  // of each are available at each level. Keep this the single source of
+  // truth — add a class here and it automatically gets a modal dropdown
+  // option, a level-scaled resource table, and pip trackers on the card.
+  var CLASS_MAX_LEVEL = 20;
+  var CLASS_DEFS = {
+    none: { label: 'None', groups: [], table: {} },
+    wizard: {
+      label: 'Wizard',
+      groups: [
+        { key: 'arcaneRecovery', label: 'Arcane Recovery', resources: [
+          { key: 'arcaneRecovery', label: 'Arcane Recovery' }
+        ], noteFn: function (level) {
+          var pool = Math.ceil(level / 2);
+          return 'Recovers expended slots totaling up to ' + pool + ' level' + (pool === 1 ? '' : 's') + ' (none 6th level or higher). Currently tracked as a once-per-day use — full short/long rest timing is planned.';
+        } },
+        { key: 'spellSlots', label: 'Spell Slots', resources: [
+          { key: 'slot1', label: 'Level 1' },
+          { key: 'slot2', label: 'Level 2' },
+          { key: 'slot3', label: 'Level 3' },
+          { key: 'slot4', label: 'Level 4' },
+          { key: 'slot5', label: 'Level 5' },
+          { key: 'slot6', label: 'Level 6' },
+          { key: 'slot7', label: 'Level 7' },
+          { key: 'slot8', label: 'Level 8' },
+          { key: 'slot9', label: 'Level 9' }
+        ] }
+      ],
+      // preparedSpells is stored per level (from the class table) but isn't
+      // a "spend and refill" resource like the others — it's shown as a
+      // plain read-only pill instead of a pip tracker.
+      table: {
+        1: { arcaneRecovery: 1, preparedSpells: 4, slot1: 2, slot2: 0, slot3: 0, slot4: 0, slot5: 0, slot6: 0, slot7: 0, slot8: 0, slot9: 0 },
+        2: { arcaneRecovery: 1, preparedSpells: 5, slot1: 3, slot2: 0, slot3: 0, slot4: 0, slot5: 0, slot6: 0, slot7: 0, slot8: 0, slot9: 0 },
+        3: { arcaneRecovery: 1, preparedSpells: 6, slot1: 4, slot2: 2, slot3: 0, slot4: 0, slot5: 0, slot6: 0, slot7: 0, slot8: 0, slot9: 0 },
+        4: { arcaneRecovery: 1, preparedSpells: 7, slot1: 4, slot2: 3, slot3: 0, slot4: 0, slot5: 0, slot6: 0, slot7: 0, slot8: 0, slot9: 0 },
+        5: { arcaneRecovery: 1, preparedSpells: 9, slot1: 4, slot2: 3, slot3: 2, slot4: 0, slot5: 0, slot6: 0, slot7: 0, slot8: 0, slot9: 0 },
+        6: { arcaneRecovery: 1, preparedSpells: 10, slot1: 4, slot2: 3, slot3: 3, slot4: 0, slot5: 0, slot6: 0, slot7: 0, slot8: 0, slot9: 0 },
+        7: { arcaneRecovery: 1, preparedSpells: 11, slot1: 4, slot2: 3, slot3: 3, slot4: 1, slot5: 0, slot6: 0, slot7: 0, slot8: 0, slot9: 0 },
+        8: { arcaneRecovery: 1, preparedSpells: 12, slot1: 4, slot2: 3, slot3: 3, slot4: 2, slot5: 0, slot6: 0, slot7: 0, slot8: 0, slot9: 0 },
+        9: { arcaneRecovery: 1, preparedSpells: 14, slot1: 4, slot2: 3, slot3: 3, slot4: 3, slot5: 1, slot6: 0, slot7: 0, slot8: 0, slot9: 0 },
+        10: { arcaneRecovery: 1, preparedSpells: 15, slot1: 4, slot2: 3, slot3: 3, slot4: 3, slot5: 2, slot6: 0, slot7: 0, slot8: 0, slot9: 0 },
+        11: { arcaneRecovery: 1, preparedSpells: 16, slot1: 4, slot2: 3, slot3: 3, slot4: 3, slot5: 2, slot6: 1, slot7: 0, slot8: 0, slot9: 0 },
+        12: { arcaneRecovery: 1, preparedSpells: 16, slot1: 4, slot2: 3, slot3: 3, slot4: 3, slot5: 2, slot6: 1, slot7: 0, slot8: 0, slot9: 0 },
+        13: { arcaneRecovery: 1, preparedSpells: 17, slot1: 4, slot2: 3, slot3: 3, slot4: 3, slot5: 2, slot6: 1, slot7: 1, slot8: 0, slot9: 0 },
+        14: { arcaneRecovery: 1, preparedSpells: 18, slot1: 4, slot2: 3, slot3: 3, slot4: 3, slot5: 2, slot6: 1, slot7: 1, slot8: 0, slot9: 0 },
+        15: { arcaneRecovery: 1, preparedSpells: 19, slot1: 4, slot2: 3, slot3: 3, slot4: 3, slot5: 2, slot6: 1, slot7: 1, slot8: 1, slot9: 0 },
+        16: { arcaneRecovery: 1, preparedSpells: 21, slot1: 4, slot2: 3, slot3: 3, slot4: 3, slot5: 2, slot6: 1, slot7: 1, slot8: 1, slot9: 0 },
+        17: { arcaneRecovery: 1, preparedSpells: 22, slot1: 4, slot2: 3, slot3: 3, slot4: 3, slot5: 2, slot6: 1, slot7: 1, slot8: 1, slot9: 1 },
+        18: { arcaneRecovery: 1, preparedSpells: 23, slot1: 4, slot2: 3, slot3: 3, slot4: 3, slot5: 3, slot6: 1, slot7: 1, slot8: 1, slot9: 1 },
+        19: { arcaneRecovery: 1, preparedSpells: 24, slot1: 4, slot2: 3, slot3: 3, slot4: 3, slot5: 3, slot6: 2, slot7: 1, slot8: 1, slot9: 1 },
+        20: { arcaneRecovery: 1, preparedSpells: 25, slot1: 4, slot2: 3, slot3: 3, slot4: 3, slot5: 3, slot6: 2, slot7: 2, slot8: 1, slot9: 1 }
+      }
+    },
+    fighter: {
+      label: 'Fighter',
+      groups: [
+        { key: 'secondWind', label: 'Second Wind', resources: [
+          { key: 'secondWind', label: 'Second Wind' }
+        ] }
+      ],
+      // weaponMastery is stored per level but isn't a "spend and refill"
+      // resource — it's a fixed capacity, shown as a plain read-only pill.
+      table: {
+        1: { secondWind: 2, weaponMastery: 3 },
+        2: { secondWind: 2, weaponMastery: 3 },
+        3: { secondWind: 2, weaponMastery: 3 },
+        4: { secondWind: 3, weaponMastery: 4 },
+        5: { secondWind: 3, weaponMastery: 4 },
+        6: { secondWind: 3, weaponMastery: 4 },
+        7: { secondWind: 3, weaponMastery: 4 },
+        8: { secondWind: 3, weaponMastery: 4 },
+        9: { secondWind: 3, weaponMastery: 4 },
+        10: { secondWind: 4, weaponMastery: 5 },
+        11: { secondWind: 4, weaponMastery: 5 },
+        12: { secondWind: 4, weaponMastery: 5 },
+        13: { secondWind: 4, weaponMastery: 5 },
+        14: { secondWind: 4, weaponMastery: 5 },
+        15: { secondWind: 4, weaponMastery: 5 },
+        16: { secondWind: 4, weaponMastery: 6 },
+        17: { secondWind: 4, weaponMastery: 6 },
+        18: { secondWind: 4, weaponMastery: 6 },
+        19: { secondWind: 4, weaponMastery: 6 },
+        20: { secondWind: 4, weaponMastery: 6 }
+      }
+    }
+  };
+
+  function getClassDef(className) {
+    return CLASS_DEFS[className] || CLASS_DEFS.none;
+  }
+  function getLevelRow(className, level) {
+    var def = getClassDef(className);
+    return def.table[level] || {};
+  }
+  function getResourceMax(className, level, key) {
+    var v = getLevelRow(className, level)[key];
+    return Number.isFinite(v) ? v : 0;
+  }
+  // Same progression for every class — not stored per-class, just derived
+  // from level: +2 at 1-4, +3 at 5-8, +4 at 9-12, +5 at 13-16, +6 at 17-20.
+  function getProficiencyBonus(level) {
+    var lvl = clamp(Math.round(level), 1, CLASS_MAX_LEVEL);
+    return 2 + Math.floor((lvl - 1) / 4);
+  }
+
   function exhaustionSummary(level) {
     if (level <= 0) return EXHAUSTION_EFFECTS[0];
     if (level >= 6) return EXHAUSTION_EFFECTS[6];
@@ -57,6 +163,11 @@
   /* ---------------------------------------------------------- */
 
   var state = null;
+
+  // Transient UI state (not persisted): which class-feature dropdown menus
+  // are currently open, keyed "pcId:groupKey" — re-rendering a card (e.g.
+  // on every pip click) would otherwise silently close them.
+  var openFeatureMenus = {};
 
   function defaultCalendarStructure() {
     return {
@@ -126,6 +237,15 @@
     var a = p.abilities || {};
     var maxHp = numOr(p.hp && p.hp.max, 10);
     var meal = (p.mealStatus === 'half' || p.mealStatus === 'full') ? p.mealStatus : 'none';
+    var className = (p.className === 'wizard' || p.className === 'fighter') ? p.className : 'none';
+    var classLevel = clamp(Math.round(numOr(p.classLevel, 1)), 1, CLASS_MAX_LEVEL);
+    var resourceUsed = {};
+    if (p.resourceUsed && typeof p.resourceUsed === 'object') {
+      Object.keys(p.resourceUsed).forEach(function (k) {
+        var v = p.resourceUsed[k];
+        if (Number.isFinite(v) && v >= 0) resourceUsed[k] = Math.round(v);
+      });
+    }
     return {
       id: p.id || uid(),
       name: typeof p.name === 'string' && p.name.trim() ? p.name : 'Unnamed',
@@ -141,6 +261,9 @@
       restedToday: !!p.restedToday,
       daysWithoutFood: Math.max(0, Math.round(numOr(p.daysWithoutFood, 0))),
       daysWithoutRest: Math.max(0, Math.round(numOr(p.daysWithoutRest, 0))),
+      className: className,
+      classLevel: classLevel,
+      resourceUsed: resourceUsed,
       notes: typeof p.notes === 'string' ? p.notes : ''
     };
   }
@@ -275,6 +398,7 @@
   function pcCardHTML(pc) {
     var hpPct = pc.hp.max > 0 ? Math.round((pc.hp.current / pc.hp.max) * 100) : 0;
     var hpClass = hpPct <= 25 ? 'hp-low' : (hpPct <= 50 ? 'hp-mid' : '');
+    var levelRow = getLevelRow(pc.className, pc.classLevel);
     var abilities = ABILITY_DEFS.map(function (def) {
       var label = def[0], key = def[1];
       var score = pc.abilities[key];
@@ -296,6 +420,10 @@
         '<div class="pc-stats-row">' +
           '<span class="stat-pill">AC <strong>' + pc.ac + '</strong></span>' +
           '<span class="stat-pill">Init Mod <strong>' + fmtMod(pc.initMod) + '</strong></span>' +
+          (pc.className !== 'none' ? '<span class="stat-pill">' + escapeHTML(getClassDef(pc.className).label) + ' <strong>' + pc.classLevel + '</strong></span>' : '') +
+          (pc.className !== 'none' ? '<span class="stat-pill">Proficiency <strong>' + fmtMod(getProficiencyBonus(pc.classLevel)) + '</strong></span>' : '') +
+          (Number.isFinite(levelRow.weaponMastery) ? '<span class="stat-pill">Weapon Mastery <strong>' + levelRow.weaponMastery + '</strong></span>' : '') +
+          (Number.isFinite(levelRow.preparedSpells) ? '<span class="stat-pill">Prepared <strong>' + levelRow.preparedSpells + '</strong></span>' : '') +
         '</div>' +
         '<div class="abilities-row">' + abilities + '</div>' +
         '<div class="hp-row">' +
@@ -309,9 +437,50 @@
           '<span class="hp-max">/ ' + pc.hp.max + '</span>' +
         '</div>' +
         pcExhaustionBlockHTML(pc) +
-        (pc.notes ? '<div class="pc-notes">' + escapeHTML(pc.notes) + '</div>' : '') +
+        classFeaturesBlockHTML(pc) +
       '</div>'
     );
+  }
+
+  function classFeaturesBlockHTML(pc) {
+    var def = getClassDef(pc.className);
+    if (pc.className === 'none' || def.groups.length === 0) return '';
+    var level = pc.classLevel;
+
+    var menus = def.groups.map(function (group) {
+      var showLabel = group.resources.length > 1;
+      var rows = group.resources.map(function (res) {
+        var max = getResourceMax(pc.className, level, res.key);
+        if (max <= 0) return '';
+        var used = clamp(pc.resourceUsed[res.key] || 0, 0, max);
+        var pips = '';
+        for (var i = 0; i < max; i++) {
+          var filled = i < (max - used);
+          pips += filled
+            ? '<button type="button" class="pip filled" data-action="resource-spend" data-key="' + res.key + '" title="Spend"></button>'
+            : '<button type="button" class="pip hollow" data-action="resource-restore" data-key="' + res.key + '" title="Restore"></button>';
+        }
+        return '<div class="resource-row">' +
+          (showLabel ? '<span class="resource-label">' + escapeHTML(res.label) + '</span>' : '') +
+          '<div class="pip-row">' + pips + '</div>' +
+        '</div>';
+      }).join('');
+
+      if (!rows) return ''; // nothing in this group unlocked yet at this level
+
+      var noteHTML = group.noteFn ? '<p class="feature-menu-note">' + escapeHTML(group.noteFn(level)) + '</p>' : '';
+      var menuKey = pc.id + ':' + group.key;
+      var openAttr = openFeatureMenus[menuKey] ? ' open' : '';
+      return (
+        '<details class="feature-menu"' + openAttr + ' data-menu-key="' + menuKey + '">' +
+          '<summary>' + escapeHTML(group.label) + '</summary>' +
+          '<div class="feature-menu-panel">' + noteHTML + '<div class="resource-list">' + rows + '</div></div>' +
+        '</details>'
+      );
+    }).join('');
+
+    if (!menus) return '';
+    return '<div class="class-feature-menus">' + menus + '</div>';
   }
 
   function pcExhaustionBlockHTML(pc) {
@@ -492,6 +661,8 @@
     $('#pcInitMod').value = 0;
     $('#pcMaxHp').value = 10;
     $('#pcCurrentHp').value = 10;
+    $('#pcClass').value = 'none';
+    $('#pcClassLevel').value = 1;
     $('#pcNotes').value = '';
     showModal('#pcModalOverlay');
     $('#pcName').focus();
@@ -513,6 +684,8 @@
     $('#pcInitMod').value = pc.initMod;
     $('#pcMaxHp').value = pc.hp.max;
     $('#pcCurrentHp').value = pc.hp.current;
+    $('#pcClass').value = pc.className;
+    $('#pcClassLevel').value = pc.classLevel;
     $('#pcNotes').value = pc.notes;
     showModal('#pcModalOverlay');
     $('#pcName').focus();
@@ -538,14 +711,20 @@
       ac: parseInt($('#pcAc').value, 10) || 0,
       initMod: parseInt($('#pcInitMod').value, 10) || 0,
       hp: { current: currentHp, max: maxHp },
+      className: $('#pcClass').value,
+      classLevel: clamp(parseInt($('#pcClassLevel').value, 10) || 1, 1, CLASS_MAX_LEVEL),
       notes: $('#pcNotes').value.trim()
     };
 
     if (id) {
       var pc = findPC(id);
       if (pc) {
+        var classChanged = pc.className !== data.className;
         pc.name = data.name; pc.abilities = data.abilities; pc.ac = data.ac;
         pc.initMod = data.initMod; pc.hp = data.hp; pc.notes = data.notes;
+        pc.className = data.className;
+        pc.classLevel = data.classLevel;
+        if (classChanged) pc.resourceUsed = {};
       }
     } else {
       data.id = uid();
@@ -594,6 +773,24 @@
     var pc = findPC(id);
     if (!pc) return;
     pc.exhaustion = clamp(pc.exhaustion + delta, 0, 6);
+    saveState();
+    renderPartyTab();
+  }
+
+  function spendResource(id, key) {
+    var pc = findPC(id);
+    if (!pc) return;
+    var max = getResourceMax(pc.className, pc.classLevel, key);
+    pc.resourceUsed[key] = clamp((pc.resourceUsed[key] || 0) + 1, 0, max);
+    saveState();
+    renderPartyTab();
+  }
+
+  function restoreResource(id, key) {
+    var pc = findPC(id);
+    if (!pc) return;
+    var max = getResourceMax(pc.className, pc.classLevel, key);
+    pc.resourceUsed[key] = clamp((pc.resourceUsed[key] || 0) - 1, 0, max);
     saveState();
     renderPartyTab();
   }
@@ -810,6 +1007,11 @@
     var conMod = abilityMod(pc.abilities.con);
     var meal = pc.mealStatus;
     var wasRested = pc.restedToday;
+
+    // Class resources (spell slots, Second Wind, Weapon Mastery, ...) fully
+    // refill on day-passing for now — a temporary stand-in until the
+    // rest/food mechanic gets redesigned to be immediate.
+    pc.resourceUsed = {};
 
     if (meal === 'full') {
       pc.daysWithoutFood = 0;
@@ -1164,6 +1366,8 @@
       case 'delete-pc': if (pcId) deletePC(pcId); break;
       case 'exhaustion-minus': if (pcId) adjustExhaustion(pcId, -1); break;
       case 'exhaustion-plus': if (pcId) adjustExhaustion(pcId, 1); break;
+      case 'resource-spend': if (pcId) { var spendKey = actionEl.getAttribute('data-key'); if (spendKey) spendResource(pcId, spendKey); } break;
+      case 'resource-restore': if (pcId) { var restoreKey = actionEl.getAttribute('data-key'); if (restoreKey) restoreResource(pcId, restoreKey); } break;
       case 'pc-hp-minus': if (pcId) adjustPCHP(pcId, -1); break;
       case 'pc-hp-plus': if (pcId) adjustPCHP(pcId, 1); break;
       case 'rest-all': restAll(); break;
@@ -1233,6 +1437,32 @@
     }
   }
 
+  // The native <details> "toggle" event does not bubble, so this listener
+  // must be registered with capture:true to observe it via delegation.
+  function handleDetailsToggle(e) {
+    var details = e.target;
+    if (!details.classList || !details.classList.contains('feature-menu')) return;
+    var menuKey = details.getAttribute('data-menu-key');
+    if (!menuKey) return;
+    if (details.open) openFeatureMenus[menuKey] = true;
+    else delete openFeatureMenus[menuKey];
+  }
+
+  // Floating menus behave like real dropdowns: clicking anywhere outside
+  // one closes whatever is open, instead of leaving it hanging over
+  // whatever content is underneath.
+  function handleOutsideFeatureMenuClick(e) {
+    var insideMenu = e.target.closest ? e.target.closest('.feature-menu') : null;
+    if (insideMenu) return;
+    var openMenus = $all('.feature-menu[open]');
+    if (openMenus.length === 0) return;
+    openMenus.forEach(function (d) {
+      d.open = false;
+      var key = d.getAttribute('data-menu-key');
+      if (key) delete openFeatureMenus[key];
+    });
+  }
+
   /* ---------------------------------------------------------- */
   /* Init                                                         */
   /* ---------------------------------------------------------- */
@@ -1243,9 +1473,11 @@
 
     document.addEventListener('click', handleClick);
     document.addEventListener('click', handleOverlayClick);
+    document.addEventListener('click', handleOutsideFeatureMenuClick);
     document.addEventListener('change', handleChange);
     document.addEventListener('submit', handleSubmit);
     document.addEventListener('keydown', handleKeydown);
+    document.addEventListener('toggle', handleDetailsToggle, true);
 
     var brand = $('.brand');
     if (brand) brand.addEventListener('keydown', handleBrandKeydown);

@@ -485,6 +485,79 @@ main {
 
 .streak-row { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 6px; }
 
+.class-feature-menus {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 6px;
+}
+
+.feature-menu { position: relative; }
+.feature-menu summary {
+  cursor: pointer;
+  list-style: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  background: var(--bg-panel-raised);
+  color: var(--brass-bright);
+  font-size: 0.76rem;
+  font-family: var(--font-display);
+  letter-spacing: 0.02em;
+  transition: border-color 0.15s ease;
+}
+.feature-menu summary::-webkit-details-marker { display: none; }
+.feature-menu summary:hover { border-color: var(--brass); }
+.feature-menu summary::after {
+  content: '▾';
+  font-size: 0.6rem;
+  color: var(--text-muted);
+  transition: transform 0.15s ease;
+}
+.feature-menu[open] summary::after { transform: rotate(180deg); }
+
+/* The panel is taken out of flow so opening a menu never resizes the
+   card underneath it — it floats above whatever follows instead. */
+.feature-menu-panel {
+  position: absolute;
+  top: calc(100% + 8px);
+  left: 0;
+  z-index: 40;
+  min-width: 230px;
+  background: var(--bg-panel-raised);
+  border: 1px solid var(--brass);
+  border-radius: var(--radius-lg);
+  box-shadow: 0 14px 34px rgba(0,0,0,0.55);
+  padding: 14px 16px;
+}
+
+.feature-menu-note {
+  margin: 0 0 10px;
+  font-size: 0.72rem;
+  color: var(--text-faint);
+  font-style: italic;
+  line-height: 1.4;
+}
+.resource-list { display: flex; flex-direction: column; gap: 12px; }
+.resource-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+.resource-label { font-size: 0.78rem; color: var(--text-muted); }
+.pip-row { display: flex; gap: 6px; flex-wrap: wrap; }
+.pip {
+  width: 18px; height: 18px;
+  border-radius: 50%;
+  border: 2px solid var(--brass);
+  padding: 0;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+.pip.filled { background: var(--brass); }
+.pip.filled:hover { background: var(--brass-bright); border-color: var(--brass-bright); }
+.pip.hollow { background: transparent; border-color: var(--border); }
+.pip.hollow:hover { border-color: var(--brass); }
+
 .pc-notes {
   font-size: 0.8rem;
   color: var(--text-muted);
