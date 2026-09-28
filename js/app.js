@@ -37,6 +37,8 @@
     'Death.'
   ];
   var CON_SAVE_DC = 10;
+  // Consecutive days on half rations before a CON save is required.
+  var HALF_RATION_SAVE_THRESHOLD = 7;
 
   // Class resources: which pip-tracked features a class has, and how many
   // of each are available at each level. Keep this the single source of
@@ -200,7 +202,8 @@
       log: [],
       pcs: [],
       combat: { round: 1, currentIndex: 0, combatants: [] },
-      calendar: cal
+      calendar: cal,
+      rationSupply: 10
     };
   }
 
@@ -280,6 +283,7 @@
       mealStatus: meal,
       restedToday: !!p.restedToday,
       daysWithoutFood: Math.max(0, Math.round(numOr(p.daysWithoutFood, 0))),
+      daysHalfRations: Math.max(0, Math.round(numOr(p.daysHalfRations, 0))),
       daysWithoutRest: Math.max(0, Math.round(numOr(p.daysWithoutRest, 0))),
       className: className,
       classLevel: classLevel,
@@ -329,7 +333,8 @@
         currentIndex: Number.isFinite(parsed.combat.currentIndex) ? parsed.combat.currentIndex : 0,
         combatants: Array.isArray(parsed.combat.combatants) ? parsed.combat.combatants.map(normalizeCombatant) : []
       } : d.combat,
-      calendar: normalizeCalendar(parsed.calendar)
+      calendar: normalizeCalendar(parsed.calendar),
+      rationSupply: Number.isFinite(parsed.rationSupply) ? Math.max(0, roundToTenth(parsed.rationSupply)) : d.rationSupply
     };
   }
 
@@ -363,6 +368,7 @@
   function clamp(n, min, max) { return Math.min(max, Math.max(min, n)); }
   function abilityMod(score) { return Math.floor((score - 10) / 2); }
   function fmtMod(n) { return (n >= 0 ? '+' : '') + n; }
+  function roundToTenth(n) { return Math.round(n * 10) / 10; }
   function rollD20() { return Math.floor(Math.random() * 20) + 1; }
   function escapeHTML(str) {
     return String(str == null ? '' : str).replace(/[&<>"']/g, function (ch) {
@@ -408,6 +414,9 @@
   /* ---------------------------------------------------------- */
 
   function renderPartyTab() {
+    var rationInput = $('#rationSupplyInput');
+    if (rationInput) rationInput.value = state.rationSupply.toFixed(1);
+
     var list = $('#pcList');
     if (state.pcs.length === 0) {
       list.innerHTML = '<div class="empty-state">No adventurers enlisted yet.<br>Add your first character to begin the campaign.</div>';
@@ -533,6 +542,7 @@
   function pcExhaustionBlockHTML(pc) {
     var streaks = '';
     if (pc.daysWithoutFood > 0) streaks += '<span class="stat-pill">🍽 ' + pc.daysWithoutFood + 'd without food</span>';
+    if (pc.daysHalfRations > 0) streaks += '<span class="stat-pill">🥣 ' + pc.daysHalfRations + 'd on half rations</span>';
     if (pc.daysWithoutRest > 0) streaks += '<span class="stat-pill">😴 ' + pc.daysWithoutRest + 'd without rest</span>';
 
     return (
@@ -890,6 +900,20 @@
     renderPartyTab();
   }
 
+  function adjustRationSupply(delta) {
+    state.rationSupply = Math.max(0, roundToTenth(state.rationSupply + delta));
+    saveState();
+    renderPartyTab();
+  }
+
+  function setRationSupply(value) {
+    var v = parseFloat(value);
+    if (isNaN(v)) v = state.rationSupply;
+    state.rationSupply = Math.max(0, roundToTenth(v));
+    saveState();
+    renderPartyTab();
+  }
+
   function feedAll(portion) {
     if (state.pcs.length === 0) return;
     state.pcs.forEach(function (p) { p.mealStatus = portion; });
@@ -1085,19 +1109,30 @@
     // recharge on a Short Rest, handled by takeShortRest()/takeLongRest().
     rechargeResources(pc, ['day']);
 
+    // Each character draws from the shared ration pool: 1 for a full ration,
+    // 0.5 for a half, nothing if they didn't eat. Clamped at 0 for now —
+    // running out has no further consequence yet.
     if (meal === 'full') {
       pc.daysWithoutFood = 0;
+      pc.daysHalfRations = 0;
+      state.rationSupply = Math.max(0, roundToTenth(state.rationSupply - 1));
     } else if (meal === 'half') {
       pc.daysWithoutFood = 0;
-      var foodRoll = rollD20();
-      var foodTotal = foodRoll + conMod;
-      if (foodTotal < CON_SAVE_DC) {
-        pc.exhaustion = clamp(pc.exhaustion + 1, 0, 6);
-        lines.push(pc.name + ': skipped a full meal, failed the DC ' + CON_SAVE_DC + ' CON save (rolled ' + foodRoll + ' ' + fmtMod(conMod) + ' = ' + foodTotal + ') — Exhaustion ' + (pc.exhaustion - 1) + '→' + pc.exhaustion + '.');
-      } else {
-        lines.push(pc.name + ': skipped a full meal but passed the DC ' + CON_SAVE_DC + ' CON save (rolled ' + foodRoll + ' ' + fmtMod(conMod) + ' = ' + foodTotal + ').');
+      pc.daysHalfRations += 1;
+      state.rationSupply = Math.max(0, roundToTenth(state.rationSupply - 0.5));
+      // Half rations only cost a CON save after a sustained streak.
+      if (pc.daysHalfRations >= HALF_RATION_SAVE_THRESHOLD) {
+        var foodRoll = rollD20();
+        var foodTotal = foodRoll + conMod;
+        if (foodTotal < CON_SAVE_DC) {
+          pc.exhaustion = clamp(pc.exhaustion + 1, 0, 6);
+          lines.push(pc.name + ': ' + pc.daysHalfRations + ' days on half rations, failed the DC ' + CON_SAVE_DC + ' CON save (rolled ' + foodRoll + ' ' + fmtMod(conMod) + ' = ' + foodTotal + ') — Exhaustion ' + (pc.exhaustion - 1) + '→' + pc.exhaustion + '.');
+        } else {
+          lines.push(pc.name + ': ' + pc.daysHalfRations + ' days on half rations but passed the DC ' + CON_SAVE_DC + ' CON save (rolled ' + foodRoll + ' ' + fmtMod(conMod) + ' = ' + foodTotal + ').');
+        }
       }
     } else {
+      pc.daysHalfRations = 0;
       pc.daysWithoutFood += 1;
       if (pc.daysWithoutFood >= 5) {
         var before = pc.exhaustion;
@@ -1504,6 +1539,8 @@
       case 'rest-all': restAll(); break;
       case 'feed-all-full': feedAll('full'); break;
       case 'feed-all-half': feedAll('half'); break;
+      case 'ration-supply-minus': adjustRationSupply(-0.5); break;
+      case 'ration-supply-plus': adjustRationSupply(0.5); break;
 
       case 'open-add-combatant': openAddCombatantModal(); break;
       case 'close-combatant-modal': closeModal('#combatantModalOverlay'); break;
@@ -1540,6 +1577,7 @@
     if (action === 'roll-input' && combId) setRoll(combId, e.target.value);
     if (action === 'meal-select' && pcId) setMealStatus(pcId, e.target.value);
     if (action === 'rested-check' && pcId) setRestedToday(pcId, e.target.checked);
+    if (action === 'ration-supply-input') setRationSupply(e.target.value);
   }
 
   function handleSubmit(e) {

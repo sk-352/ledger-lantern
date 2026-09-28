@@ -32,19 +32,27 @@ browsers.
   rest — extreme heat, certain spells, forced marches, and so on).
 - Each character has two daily fields you set before advancing the day:
   **Ate today** (None / Half ration / Full ration) and **Rested today**.
-  When you advance the day, the app resolves both automatically per the
-  malnutrition and lack-of-rest rules: a half ration risks a DC 10
-  Constitution save (rolled for you, using the character's CON) or +1
-  Exhaustion; skipping food entirely for 5 straight days adds +1 Exhaustion
-  automatically (and again every day after); missing a second straight day
-  of rest risks the same DC 10 save; and a day spent well-fed **and**
-  rested eases Exhaustion down by 1. Every roll and result is written into
-  that day's Chronicle entry, and small chips on the card track running
-  streaks ("3d without food").
-- **Rest Whole Party** marks everyone as rested today; **Full Rations** /
-  **Half Rations** set everyone's meal for today in one click (half rations
-  is there for deliberately stretching low supplies). These just set the
-  day's intent — nothing happens until you advance the day.
+  When the day ends, the app resolves them automatically: **half rations**
+  only cost a DC 10 Constitution save (rolled for you, using the
+  character's CON) once a character has been on half rations for **7 or
+  more days in a row** (any full ration or skipped day resets that streak);
+  skipping food entirely for 5 straight days adds +1 Exhaustion
+  automatically (and again every day after); and missing a second straight
+  day of rest risks the same DC 10 save. Every roll and result is written
+  into that day's Chronicle entry, and small chips on the card track
+  running streaks ("3d without food", "4d on half rations"). Exhaustion is
+  eased by a **Long Rest** (see Rests below), not by the day ending.
+- **Ration supply:** the party shares one pool of rations, shown as a
+  stepper/input in the Party toolbar (starts at 10.0). When a day ends,
+  each character draws from it — **1.0** for a full ration, **0.5** for a
+  half ration, nothing if they didn't eat — so three characters on half
+  rations use 1.5 in a day. Type a number or use the −/+ buttons (steps of
+  0.5) to restock. The pool stops at 0; running out has no further effect
+  yet — that's groundwork for future features.
+- **Full Rations** / **Half Rations** set everyone's meal for today in one
+  click (half rations is there for deliberately stretching low supplies),
+  and **Mark Rested** flags everyone as rested with no other effects.
+  These just set the day's intent — nothing is consumed until the day ends.
 - Optionally give a character a **Class** (currently Wizard or Fighter — more
   can be added later) and a **Level** (1–20). This unlocks small dropdown
   menus on the card for that class's *daily-use* features — Wizard gets

@@ -722,14 +722,17 @@ input[type="number"] { font-family: var(--font-mono); }
 .roll-block input::-webkit-inner-spin-button,
 .roll-block input::-webkit-outer-spin-button,
 .number-stepper input::-webkit-inner-spin-button,
-.number-stepper input::-webkit-outer-spin-button {
+.number-stepper input::-webkit-outer-spin-button,
+.ration-supply input::-webkit-inner-spin-button,
+.ration-supply input::-webkit-outer-spin-button {
   -webkit-appearance: none;
   margin: 0;
 }
 .hp-controls input,
 .hpmini-block input,
 .roll-block input,
-.number-stepper input {
+.number-stepper input,
+.ration-supply input {
   -moz-appearance: textfield;
   appearance: textfield;
 }
@@ -950,6 +953,26 @@ select:focus { border-color: var(--brass); outline: none; }
   transition: opacity 0.4s ease;
 }
 .save-indicator.show { opacity: 1; }
+
+/* ============================== RATION SUPPLY ============================== */
+
+.ration-supply {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-family: var(--font-mono);
+  font-size: 0.82rem;
+  color: var(--text-muted);
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  padding: 5px 10px;
+}
+.ration-supply input {
+  width: 54px;
+  text-align: center;
+  padding: 3px 4px;
+  font-size: 0.82rem;
+}
 
 /* ============================== RESPONSIVE ============================== */
 

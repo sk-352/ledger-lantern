@@ -56,6 +56,12 @@
       <button class="btn btn-ghost" data-action="rest-all" title="Just flag every character as rested today, with no other effects">🛌 Mark Rested (no effects)</button>
       <button class="btn btn-ghost" data-action="feed-all-full" title="Mark every character as having eaten a full ration today">🍖 Full Rations</button>
       <button class="btn btn-ghost" data-action="feed-all-half" title="Stretch supplies — mark every character as having eaten a half ration today">🍖 Half Rations</button>
+      <div class="ration-supply" title="Shared ration pool: a full ration costs 1, a half ration 0.5, per character per day">
+        <span>Rations</span>
+        <button type="button" class="hp-step-btn" data-action="ration-supply-minus" title="-0.5" aria-label="Decrease rations">−</button>
+        <input type="number" id="rationSupplyInput" data-action="ration-supply-input" step="0.5" min="0" aria-label="Ration supply">
+        <button type="button" class="hp-step-btn" data-action="ration-supply-plus" title="+0.5" aria-label="Increase rations">+</button>
+      </div>
     </div>
     <div id="pcList" class="pc-grid"></div>
   </section>
@@ -107,7 +113,7 @@
       <label for="dayNoteInput">What happened today? <span class="optional-tag">(optional)</span></label>
       <textarea id="dayNoteInput" rows="2" placeholder="The party made camp outside the ruined watchtower…"></textarea>
       <button class="btn btn-brass" data-action="advance-day-with-note">Advance to Next Day →</button>
-      <p class="calendar-hint">Advancing the day marks every character Tired and Hungry, and moves the calendar forward one day. Clear those effects from the Party tab when the party rests or eats.</p>
+      <p class="calendar-hint">Advancing the day moves the clock forward 24 hours and resolves each character's food and rest for the day (rations are drawn from the shared supply, and Exhaustion may be triggered). Set each character's meal and rest on the Party tab first.</p>
     </div>
 
     <div class="calendar-structure-toolbar">
