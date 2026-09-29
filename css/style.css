@@ -791,7 +791,14 @@ input[type="number"] { font-family: var(--font-mono); }
   gap: 10px;
   margin: 4px 0 2px;
 }
-.jump-fields .field { margin-bottom: 0; }
+/* Grid items default to min-width:auto, so each column was stuck at its
+   input's intrinsic width (the Year field especially) instead of its fr
+   share — the row ended up wider than the card and the last field, Hour,
+   spilled outside it. Let the columns shrink and give every control the
+   width of the column it sits in. */
+.jump-fields .field { margin-bottom: 0; min-width: 0; }
+.jump-fields .field input,
+.jump-fields .field select { width: 100%; min-width: 0; }
 
 .calendar-structure-toolbar {
   max-width: 560px;

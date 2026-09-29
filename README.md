@@ -63,19 +63,20 @@ browsers.
   of pushing its content down, and close when you click elsewhere.
   Characters with no class selected show no menus at all, so martial-only
   tables stay uncluttered.
-  *Current simplification:* these resources fully refill whenever you
-  advance the day (not tied to resting or eating) — a stand-in until the
-  rest/food mechanic gets reworked to be immediate. Spell Slots, Arcane
-  Recovery, and Second Wind all cover the full 1–20 range.
+  *How they refill:* each resource recharges on the rest that matches it —
+  Arcane Recovery and Second Wind on a **Short Rest**, Spell Slots on a
+  **Long Rest** (see Rests below) — nothing refills just because the day
+  ended. Spell Slots, Arcane Recovery, and Second Wind all cover the full
+  1–20 range.
   Every class also shows a read-only **Proficiency** pill (the same
   progression for every class, by level: +2 at 1–4 up to +6 at 17–20) plus
   whichever level-scaled reference numbers that class defines but doesn't
   "spend" day to day — Wizard shows **Prepared** (Prepared Spells), Fighter
   shows **Weapon Mastery** — as plain text next to the class/level pill,
   not pips. The Arcane Recovery menu also includes a note on how many
-  spell-slot levels it actually recovers at the character's level; the
-  interaction of picking specific slots to recover is tied to short/long
-  rests, which aren't modeled yet.
+  spell-slot levels it actually recovers at the character's level; *which*
+  slots to give back isn't modeled — the feature is tracked as a single use
+  that refills on a Short Rest.
 - Quick HP adjustment with −/+ buttons or by typing a value directly.
 - Edit or remove any character at any time. Optional free-text notes per
   character (background, quirks, whatever you like) — saved with the
@@ -142,7 +143,9 @@ browsers.
   at least 1 HP: fully heals them, restores all spent Hit Dice, eases
   Exhaustion by 1 (only if they ate a full ration that day), marks them
   rested for the day, and recharges both Long and Short Rest features
-  (Spell Slots included).
+  (Spell Slots included). The rest is credited to the day it *started* on:
+  if it runs past midnight, the day that closes still counts that meal and
+  that rest — and grants the Exhaustion relief — before the new day begins.
 - Both are **party-wide** actions — everyone rests together. There's no
   per-character opt-out yet (e.g. someone standing watch through the
   night); that granularity, along with proper rest-interruption tracking,

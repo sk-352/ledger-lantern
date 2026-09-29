@@ -55,7 +55,7 @@
           { key: 'arcaneRecovery', label: 'Arcane Recovery' }
         ], noteFn: function (level) {
           var pool = Math.ceil(level / 2);
-          return 'Recovers expended slots totaling up to ' + pool + ' level' + (pool === 1 ? '' : 's') + ' (none 6th level or higher). Currently tracked as a once-per-day use — full short/long rest timing is planned.';
+          return 'Recovers expended slots totaling up to ' + pool + ' level' + (pool === 1 ? '' : 's') + ' (none 6th level or higher). Tracked as a single use that refills on a Short Rest — choosing which slots to recover isn\'t modeled.';
         } },
         { key: 'spellSlots', label: 'Spell Slots', rechargeOn: 'long', resources: [
           { key: 'slot1', label: 'Level 1' },
@@ -1235,7 +1235,11 @@
   function takeLongRest() {
     if (state.pcs.length === 0) return;
     if (!confirm('Take a Long Rest as a party? This advances the clock by 8 hours, fully heals everyone, restores Hit Dice, eases Exhaustion by 1 (if well-fed), and recharges Long/Short Rest features.')) return;
-    passHours(8, '');
+    // The benefits belong to the day the rest *started* on, so they are
+    // applied before the clock moves: a rest running past midnight would
+    // otherwise hit resolveDayEnd() first, which clears "ate today"/"rested
+    // today" — silently dropping the Exhaustion relief and the rest credit
+    // for the day that is closing.
     state.pcs.forEach(function (pc) {
       if (pc.hp.current <= 0) return; // needs at least 1 HP to benefit
       pc.hp.current = pc.hp.max;
@@ -1244,6 +1248,7 @@
       pc.restedToday = true;
       rechargeResources(pc, ['short', 'long']);
     });
+    passHours(8, '');
     saveState();
     renderHeader();
     renderPartyTab();
