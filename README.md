@@ -2,7 +2,7 @@
 
 A single, self-contained, offline tool for tabletop RPG Game Masters. It tracks
 your party, runs initiative in combat, and keeps a day-by-day campaign
-calendar — all in your browser, with no installation, no server, and no
+calendar. All in your browser, with no installation, no server, and no
 internet connection required.
 
 ## Getting started
