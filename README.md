@@ -195,6 +195,9 @@ progress.
 - All the interface text is in English. If you'd like it in another
   language, the labels live in `index.html` and `js/app.js` and are plain
   text strings that can be translated directly.
+- **License:** released under the MIT License — see [`LICENSE`](LICENSE).
+  Dungeons & Dragons is a trademark of Wizards of the Coast; this is an
+  unofficial fan tool with no affiliation, and it ships no book text.
 
 ## File structure
 
@@ -205,8 +208,9 @@ ledger-lantern/
 │   └── style.css   # All styling (no external fonts or frameworks)
 ├── js/
 │   └── app.js       # All application logic (no external libraries)
+├── LICENSE          # MIT
 └── README.md        # This file
 ```
 
-No build tools, no `node_modules`, no package manager — just three files
-your browser can open directly from disk.
+No build tools, no `node_modules`, no package manager — open `index.html`
+directly from disk and it runs.
